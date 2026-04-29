@@ -1114,225 +1114,184 @@ const URLS = {
 const OUR_TEAM = 'Fjærkrebandittene';
 const OUR_TEAM_LC = 'fjærkrebandittene';
 
-/* ── Hjelp: hent HTML via Worker ── */
+/* ── Hjelp: hent JSON via Worker ── */
 async function proxyFetch(url) {
   const res = await fetch(`${WORKER_URL}?url=${encodeURIComponent(url)}`);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.text();
+  if (!res.ok) throw new Error(`HTTP ${res.status} fra Worker`);
+  const json = await res.json();
+  if (json.error) throw new Error(json.error);
+  return json; // { tableRows, kampLinks, pageText }
 }
 
-/* ── Parser: parseHTML til DOM ── */
-function parseHTML(html) {
-  return new DOMParser().parseFromString(html, 'text/html');
-}
+const OUR_TEAM    = 'Fjærkrebandittene';
+const OUR_TEAM_LC = 'fjærkrebandittene';
 
-/* ── Parser: Tabellposisjoner ──
-   Leser alle <tr>-rader i den divisjonstabellen der Fjærkrebandittene finnes.
-   Kolonnestruktur gamer.no: # | Lag | S | V | U | T | +/- | B | P
-*/
-function parseStandings(html) {
-  const doc = parseHTML(html);
+/* ═══════════════════════════════════════════
+   PARSER: TABELLPOSISJONER
+   Jobber på tableRows fra Worker.
+   Finner divisjonsavsnittet som inneholder laget vårt.
+   ═══════════════════════════════════════════ */
+function parseStandings({ tableRows }) {
+  if (!tableRows || tableRows.length === 0) return null;
+
+  // Finn rad som inneholder lagets navn
+  const ourIdx = tableRows.findIndex(row =>
+    row.some(c => c.toLowerCase().includes(OUR_TEAM_LC))
+  );
+  if (ourIdx === -1) return null;
+
+  // Gå bakover for å finne start på tabellseksjonen (stopp ved ikke-tabellrader)
+  let start = ourIdx;
+  while (start > 0) {
+    const prev = tableRows[start - 1];
+    const nums = prev.filter(c => /^[\d+\-]+$/.test(c) && c !== '').length;
+    if (nums < 2 && !prev.some(c => /^[#\d]$/.test(c) || ['lag','s','v','u','t','p','b'].includes(c.toLowerCase()))) break;
+    start--;
+  }
+
   const results = [];
+  for (let i = start; i < tableRows.length; i++) {
+    const row = tableRows[i];
+    const cells = row.filter(c => c.trim() !== '');
+    if (cells.length < 3) continue;
 
-  // Finn alle tabeller på siden
-  const tables = doc.querySelectorAll('table');
-  let targetTable = null;
+    // Finn lagnavn (lengst ikke-numerisk celle)
+    const nameCells = cells.filter(c =>
+      isNaN(c.replace(/[+\-]/, '')) && c.length > 2 &&
+      !['#','lag','s','v','u','t','p','b','+/-'].includes(c.toLowerCase())
+    );
+    if (nameCells.length === 0) continue;
+    const name = nameCells[0];
 
-  for (const table of tables) {
-    // Sjekk om denne tabellen inneholder laget vårt
-    const text = table.textContent.toLowerCase();
-    if (text.includes(OUR_TEAM_LC)) {
-      targetTable = table;
-      break;
-    }
+    // Finn alle numeriske verdier
+    const nums = cells
+      .filter(c => /^[\d+\-]+$/.test(c))
+      .map(c => parseInt(c) || 0);
+    if (nums.length < 3) continue;
+
+    const pos = parseInt(cells[0]) || (results.length + 1);
+    const w   = nums[1] !== undefined ? nums[1] : nums[0];
+    const l   = nums[3] !== undefined ? nums[3] : nums[nums.length - 2];
+    const pts = nums[nums.length - 1];
+
+    const withdrawn = name.toLowerCase().includes('trukket');
+    results.push({ pos, name, w, l, pts, us: name.toLowerCase().includes(OUR_TEAM_LC), withdrawn });
+
+    // Stopp hvis vi treffer en rad som ser ut som ny seksjon-header
+    if (results.length > 2 && cells.length > 1 && isNaN(cells[0]) &&
+        !nameCells[0].toLowerCase().includes(OUR_TEAM_LC) &&
+        nums.length < 2) break;
   }
-
-  if (!targetTable) {
-    // Fallback: prøv å finne rader i alle elementer
-    const allRows = doc.querySelectorAll('tr');
-    for (const row of allRows) {
-      if (row.textContent.toLowerCase().includes(OUR_TEAM_LC)) {
-        targetTable = row.closest('table');
-        break;
-      }
-    }
-  }
-
-  if (!targetTable) return null;
-
-  const rows = targetTable.querySelectorAll('tr');
-  let pos = 0;
-  rows.forEach(row => {
-    const cells = row.querySelectorAll('td');
-    if (cells.length < 4) return;
-
-    // Prøv å finne lagnavn — typisk i andre celle
-    let name = '';
-    let w = 0, l = 0, played = 0, pts = 0;
-
-    // Iterer celler for å finne strenger vs tall
-    const cellTexts = Array.from(cells).map(c => c.textContent.trim());
-
-    // Prøv å identifisere hvilken celle som er lagnavn (lengst tekst)
-    const nameCell = cellTexts.find(t => t.length > 2 && isNaN(t.replace(/[+\-]/,'')));
-    if (!nameCell) return;
-
-    name = nameCell;
-    // Finn numeriske verdier: S, V, U, T, +/-, B, P
-    const nums = cellTexts.filter(t => !isNaN(t) && t !== '').map(Number);
-    if (nums.length >= 4) {
-      played = nums[0];
-      w      = nums[1];
-      // nums[2] = uavgjort
-      l      = nums[3];
-      pts    = nums[nums.length - 1];
-    }
-
-    pos++;
-    results.push({
-      pos,
-      name,
-      w,
-      l,
-      played,
-      pts,
-      us: name.toLowerCase().includes(OUR_TEAM_LC),
-    });
-  });
 
   return results.length > 0 ? results : null;
 }
 
-/* ── Parser: Spillte kamper (resultater) ── */
-function parseResults(html) {
-  const doc = parseHTML(html);
-  const matches = [];
+/* ═══════════════════════════════════════════
+   PARSER: SPILLTE KAMPER
+   Jobber på pageText. Finner linjer med laget vårt
+   + naboscorepattern som indikerer et fullspilt resultat.
+   ═══════════════════════════════════════════ */
+function parseResults({ pageText, kampLinks }) {
+  if (!pageText) return [];
+  const lines  = pageText.split('\n').map(l => l.trim()).filter(Boolean);
+  const seen   = new Set();
+  const results = [];
 
-  // gamer.no bruker typisk .match, .match-row, article, li.match e.l.
-  // Vi prøver et bredt sett med selektorer og faller tilbake på tekst-parsing
-  const candidates = [
-    ...doc.querySelectorAll('[class*="match"]'),
-    ...doc.querySelectorAll('[class*="kamp"]'),
-    ...doc.querySelectorAll('[class*="result"]'),
-    ...doc.querySelectorAll('article'),
-    ...doc.querySelectorAll('li'),
-  ];
+  for (let i = 0; i < lines.length; i++) {
+    if (!lines[i].toLowerCase().includes(OUR_TEAM_LC)) continue;
 
-  const seen = new Set();
+    // Vindu på ±8 linjer rundt vårt lagnavn
+    const win = lines.slice(Math.max(0, i - 8), Math.min(lines.length, i + 9));
+    const ctx = win.join(' ');
 
-  for (const el of candidates) {
-    const text = el.textContent;
-    if (seen.has(el)) continue;
-
-    // Se etter score-lignende mønstre: "16 - 4", "2 - 0", etc.
-    const scoreMatch = text.match(/(\d+)\s*[–\-:]\s*(\d+)/);
+    // Resultat-score: ett av tallene 1 eller 2 (Bo2), ingen 0-0
+    const scoreRe = /\b([012])\s*[–\-:]\s*([012])\b/g;
+    const scoreMatch = scoreRe.exec(ctx);
     if (!scoreMatch) continue;
 
-    // Sjekk at dette elementet inneholder laget vårt
-    if (!text.toLowerCase().includes(OUR_TEAM_LC)) continue;
+    const scoreUs   = parseInt(scoreMatch[1]);
+    const scoreThem = parseInt(scoreMatch[2]);
+    if (scoreUs === 0 && scoreThem === 0) continue;
 
-    seen.add(el);
-
-    const scoreA = parseInt(scoreMatch[1]);
-    const scoreB = parseInt(scoreMatch[2]);
-
-    // Finn motstander — all tekst som ikke er vårt lag eller bare tall
-    const lines = text.split(/\n/).map(l => l.trim()).filter(Boolean);
-    let opponent = 'Ukjent motstander';
-    for (const line of lines) {
-      if (!line.toLowerCase().includes(OUR_TEAM_LC) &&
-          line.length > 2 && line.length < 80 &&
-          isNaN(line) && !line.match(/^\d+\s*[–\-]\s*\d+$/)) {
-        opponent = line;
-        break;
-      }
+    // Finn motstander i vinduet
+    let opponent = null;
+    for (const line of win) {
+      if (line.toLowerCase().includes(OUR_TEAM_LC)) continue;
+      if (line.length < 3 || line.length > 80) continue;
+      if (/^\d/.test(line)) continue;      // Starts with number = date/score
+      if (/^\W+$/.test(line)) continue;    // Only symbols
+      if (['bo2','bo3','gruppe','runde','kamp','seriekamp'].some(k => line.toLowerCase().includes(k))) continue;
+      opponent = line;
+      break;
     }
+    if (!opponent) continue;
 
-    // Finn dato
-    const dateEl = el.querySelector('[class*="date"],[class*="dato"],[class*="time"]') ||
-                   el.querySelector('time');
-    let date = null;
-    if (dateEl) {
-      date = dateEl.getAttribute('datetime') || dateEl.textContent.trim();
-    }
+    const key = opponent.toLowerCase() + scoreUs + scoreThem;
+    if (seen.has(key)) continue;
+    seen.add(key);
 
-    // Finn kamplenke
-    const linkEl = el.querySelector('a[href*="/kamp/"]') || el.closest('a');
-    const matchUrl = linkEl ? 'https://www.gamer.no' + linkEl.getAttribute('href') : null;
-
-    // Bestem resultatet — forutsatt at vi er første lag i oppsettet
-    let result = 'draw';
-    if (scoreA > scoreB) result = 'win';
-    if (scoreA < scoreB) result = 'loss';
-
-    matches.push({ opponent, scoreUs: scoreA, scoreThem: scoreB, result, date, matchUrl, maps: [] });
+    const result = scoreUs > scoreThem ? 'win' : scoreUs < scoreThem ? 'loss' : 'draw';
+    const matchUrl = kampLinks && kampLinks[results.length] || null;
+    results.push({ opponent, scoreUs, scoreThem, result, maps: [], matchUrl, date: null, time: '20:00' });
   }
 
-  return matches;
+  return results;
 }
 
-/* ── Parser: Kommende kamper ── */
-function parseUpcoming(html) {
-  const doc = parseHTML(html);
-  const matches = [];
+/* ═══════════════════════════════════════════
+   PARSER: KOMMENDE KAMPER
+   Finner tilfeller av lagets navn UTEN score i nærheten.
+   ═══════════════════════════════════════════ */
+function parseUpcoming({ pageText, kampLinks }) {
+  if (!pageText) return [];
+  const lines = pageText.split('\n').map(l => l.trim()).filter(Boolean);
+  const seen  = new Set();
+  const upcoming = [];
 
-  const candidates = [
-    ...doc.querySelectorAll('[class*="match"]'),
-    ...doc.querySelectorAll('[class*="kamp"]'),
-    ...doc.querySelectorAll('[class*="fixture"]'),
-    ...doc.querySelectorAll('article'),
-    ...doc.querySelectorAll('li'),
-  ];
+  for (let i = 0; i < lines.length; i++) {
+    if (!lines[i].toLowerCase().includes(OUR_TEAM_LC)) continue;
 
-  const seen = new Set();
+    const win = lines.slice(Math.max(0, i - 8), Math.min(lines.length, i + 9));
+    const ctx = win.join(' ');
 
-  for (const el of candidates) {
-    const text = el.textContent;
-    if (seen.has(el) || !text.toLowerCase().includes(OUR_TEAM_LC)) continue;
-    // Skip if it has a score (it's a result, not upcoming)
-    if (text.match(/\d+\s*[–\-]\s*\d+/)) continue;
-    seen.add(el);
+    // Skip hvis det finnes en resultat-score
+    if (/\b[12]\s*[–\-:]\s*[012]\b/.test(ctx)) continue;
 
     // Finn motstander
-    const lines = text.split(/\n/).map(l => l.trim()).filter(Boolean);
-    let opponent = 'Ukjent motstander';
-    for (const line of lines) {
-      if (!line.toLowerCase().includes(OUR_TEAM_LC) &&
-          line.length > 2 && line.length < 80 &&
-          isNaN(line)) {
-        opponent = line;
-        break;
-      }
+    let opponent = null;
+    for (const line of win) {
+      if (line.toLowerCase().includes(OUR_TEAM_LC)) continue;
+      if (line.length < 3 || line.length > 80) continue;
+      if (/^\d/.test(line)) continue;
+      if (/^\W+$/.test(line)) continue;
+      if (['bo2','bo3','gruppe','runde','kamp','seriekamp','vs'].some(k => line.toLowerCase() === k)) continue;
+      opponent = line;
+      break;
     }
+    if (!opponent) continue;
 
-    // Finn dato/tid
-    const dateEl = el.querySelector('[class*="date"],[class*="dato"],[class*="time"],time');
-    let date = null, time = '20:00';
-    if (dateEl) {
-      const dt = dateEl.getAttribute('datetime') || dateEl.textContent.trim();
-      date = dt;
-    }
+    const key = opponent.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
 
-    // Finn kamplenke
-    const linkEl = el.querySelector('a[href*="/kamp/"]') || el.closest('a[href*="/kamp/"]');
-    const matchUrl = linkEl
-      ? (linkEl.getAttribute('href').startsWith('http')
-          ? linkEl.getAttribute('href')
-          : 'https://www.gamer.no' + linkEl.getAttribute('href'))
-      : null;
+    // Finn dato i nærheten: "30. april", "torsdag 30."
+    let date = null;
+    const dateRe = /(\d{1,2})[.\s]+(januar|februar|mars|april|mai|juni|juli|august|september|oktober|november|desember)/i;
+    const dateMatch = ctx.match(dateRe);
+    if (dateMatch) date = dateMatch[0];
 
-    matches.push({ opponent, date, time, matchUrl, result: 'upcoming', maps: [] });
+    // Finn tidspunkt
+    const timeRe = /\b(\d{2}):(\d{2})\b/;
+    const timeMatch = ctx.match(timeRe);
+    const time = timeMatch ? timeMatch[0] : '20:00';
+
+    // Kamplenke — bruk kampLinks i rekkefølge, filtrer ut allerede brukte
+    const matchUrl = kampLinks && kampLinks[upcoming.length] || null;
+
+    upcoming.push({ opponent, date, time, matchUrl, result: 'upcoming', maps: [] });
   }
 
-  // Deduplisere
-  const unique = [];
-  const names = new Set();
-  for (const m of matches) {
-    const key = m.opponent + (m.date || '');
-    if (!names.has(key)) { names.add(key); unique.push(m); }
-  }
-
-  return unique;
+  return upcoming;
 }
 
 /* ═══════════════ LIVE DATA LOAD ═══════════════ */
@@ -1349,25 +1308,33 @@ async function loadLiveData() {
   if (btn) btn.disabled = true;
 
   try {
-    // Sjekk at Worker URL er satt
-    if (WORKER_URL.includes('DITT-NAVN')) {
-      setStatus('Worker URL ikke satt — se koden', 'var(--red)');
-      renderKamperFallback();
-      return;
-    }
-
-    const [resHtml, upHtml, stHtml] = await Promise.all([
+    // Hent JSON fra Worker (parallelt)
+    const [resData, upData, stData] = await Promise.all([
       proxyFetch(URLS.results),
       proxyFetch(URLS.upcoming),
       proxyFetch(URLS.standings),
     ]);
 
-    liveData.results   = parseResults(resHtml);
-    liveData.upcoming  = parseUpcoming(upHtml);
-    liveData.standings = parseStandings(stHtml);
+    // Debug: lagre rådata for inspeksjon
+    window._dbg = { resData, upData, stData };
 
-    const now = new Date().toLocaleTimeString('no-NO', {hour:'2-digit',minute:'2-digit'});
-    setStatus(`Oppdatert ${now}`, 'var(--green)');
+    liveData.results   = parseResults(resData);
+    liveData.upcoming  = parseUpcoming(upData);
+    liveData.standings = parseStandings(stData);
+
+    const now = new Date().toLocaleTimeString('no-NO', { hour: '2-digit', minute: '2-digit' });
+    const gotResults  = liveData.results.length;
+    const gotUpcoming = liveData.upcoming.length;
+    const gotStandings = liveData.standings ? liveData.standings.length : 0;
+
+    setStatus(`Oppdatert ${now} · ${gotResults} res, ${gotUpcoming} kom, ${gotStandings} tab`, 'var(--green)');
+
+    // Vis debug-panel hvis ingenting ble parsert
+    if (gotResults === 0 && gotUpcoming === 0 && gotStandings === 0) {
+      setStatus(`Oppdatert ${now} — parsing fant ingenting. Trykk DEBUG.`, 'var(--yellow)');
+      showDebugPanel(resData, upData, stData);
+    }
+
     renderKamper();
   } catch (err) {
     console.error('Live data feil:', err);
@@ -1378,30 +1345,46 @@ async function loadLiveData() {
   }
 }
 
-/* Fallback når Worker ikke er konfigurert enda */
-function renderKamperFallback() {
-  document.getElementById('played-list').innerHTML = `
-    <div style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--text3);padding:20px;text-align:center;border:1px dashed var(--border);border-radius:4px;line-height:2;">
-      Ingen live-data tilgjengelig.<br>
-      Deploy <span style="color:var(--orange)">gamer-proxy-worker.js</span> til Cloudflare Workers<br>
-      og sett <span style="color:var(--orange)">WORKER_URL</span> øverst i scriptet.
-    </div>`;
-  document.getElementById('upcoming-list').innerHTML = '';
-  // Vis kjent info om neste kamp manuelt
-  renderNextMatchManual();
-  renderStandingsFallback();
+/* ─ Debug-panel: viser rå Worker-respons for å hjelpe med parsertuning ─ */
+function showDebugPanel(resData, upData, stData) {
+  const existing = document.getElementById('debug-panel');
+  if (existing) existing.remove();
+
+  const panel = document.createElement('div');
+  panel.id = 'debug-panel';
+  panel.style.cssText = `
+    background:#0e1117;border:1px solid #e05252;border-radius:4px;padding:16px;
+    margin-top:20px;font-family:'Share Tech Mono',monospace;font-size:10px;color:#c8d4e8;
+  `;
+
+  const sections = [
+    { label: 'RESULTATER — pageText (første 80 linjer)', data: (resData.pageText||'').split('\n').slice(0,80).join('\n') },
+    { label: 'RESULTATER — kampLinks', data: JSON.stringify(resData.kampLinks, null, 2) },
+    { label: 'RESULTATER — tableRows (første 20)', data: JSON.stringify((resData.tableRows||[]).slice(0,20), null, 2) },
+    { label: 'KOMMENDE — pageText (første 80 linjer)', data: (upData.pageText||'').split('\n').slice(0,80).join('\n') },
+    { label: 'KOMMENDE — kampLinks', data: JSON.stringify(upData.kampLinks, null, 2) },
+    { label: 'TABELL — tableRows (første 30)', data: JSON.stringify((stData.tableRows||[]).slice(0,30), null, 2) },
+  ];
+
+  panel.innerHTML = `
+    <div style="color:#e05252;font-weight:bold;margin-bottom:12px;">
+      ⚠ PARSER FANT INGENTING — rådata fra Worker (for debugging)
+    </div>
+    ${sections.map(s => `
+      <div style="margin-bottom:16px;">
+        <div style="color:#f0901a;margin-bottom:4px;">${s.label}</div>
+        <pre style="background:#080a0d;padding:10px;border-radius:3px;overflow:auto;max-height:200px;white-space:pre-wrap;word-break:break-all;">${s.data || '(tom)'}</pre>
+      </div>
+    `).join('')}
+    <div style="color:#5e7399;margin-top:8px;">
+      Screenshot dette panelet og send til utvikleren for å fikse parserne.
+    </div>
+  `;
+
+  document.getElementById('played-list').after(panel);
 }
 
-function renderNextMatchManual() {
-  // Hardkodet neste kamp basert på kjent URL — oppdateres av live-data når Worker er klar
-  const nm = {
-    opponent: '???',
-    date: '2026-04-30',
-    time: '20:00',
-    matchUrl: 'https://www.gamer.no/turneringer/komplettligaen-counter-strike-varen-2026/13835/kamp/256224',
-  };
-  _renderNextMatch(nm);
-}
+
 
 function renderStandingsFallback() {
   // Vis tabellen fra screenshot - manuelt innskrevet
