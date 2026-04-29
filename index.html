@@ -1305,7 +1305,9 @@ async function loadLiveData() {
     setStatus(`Oppdatert ${now} · ${results.length} res, ${upcoming.length} kom, ${standings ? standings.length : 0} tab`, 'var(--green)');
 
     if (!results.length && !upcoming.length && !standings) {
-      showDebugPanel(data, data, data);
+      showDebugPanel(data);
+    } else if (!results.length && upcoming.length <= 1) {
+      showDebugPanel(data);
     }
 
     renderKamper();
@@ -1318,43 +1320,34 @@ async function loadLiveData() {
   }
 }
 
-/* ─ Debug-panel: viser rå Worker-respons for å hjelpe med parsertuning ─ */
-function showDebugPanel(resData, upData, stData) {
+/* ─ Debug-panel ─ */
+function showDebugPanel(d) {
   const existing = document.getElementById('debug-panel');
   if (existing) existing.remove();
 
+  const lines = (d.pageText || '').split('\n').map(l => l.trim()).filter(Boolean);
+  const rows   = (d.tableRows || []).slice(0, 40);
+  const links  = (d.kampLinks || []);
+
   const panel = document.createElement('div');
   panel.id = 'debug-panel';
-  panel.style.cssText = `
-    background:#0e1117;border:1px solid #e05252;border-radius:4px;padding:16px;
-    margin-top:20px;font-family:'Share Tech Mono',monospace;font-size:10px;color:#c8d4e8;
-  `;
-
-  const sections = [
-    { label: 'RESULTATER — pageText (første 80 linjer)', data: (resData.pageText||'').split('\n').slice(0,80).join('\n') },
-    { label: 'RESULTATER — kampLinks', data: JSON.stringify(resData.kampLinks, null, 2) },
-    { label: 'RESULTATER — tableRows (første 20)', data: JSON.stringify((resData.tableRows||[]).slice(0,20), null, 2) },
-    { label: 'KOMMENDE — pageText (første 80 linjer)', data: (upData.pageText||'').split('\n').slice(0,80).join('\n') },
-    { label: 'KOMMENDE — kampLinks', data: JSON.stringify(upData.kampLinks, null, 2) },
-    { label: 'TABELL — tableRows (første 30)', data: JSON.stringify((stData.tableRows||[]).slice(0,30), null, 2) },
-  ];
-
+  panel.style.cssText = 'background:#0e1117;border:1px solid #e05252;border-radius:4px;padding:16px;margin-top:16px;font-family:"Share Tech Mono",monospace;font-size:10px;color:#c8d4e8;';
   panel.innerHTML = `
-    <div style="color:#e05252;font-weight:bold;margin-bottom:12px;">
-      ⚠ PARSER FANT INGENTING — rådata fra Worker (for debugging)
-    </div>
-    ${sections.map(s => `
-      <div style="margin-bottom:16px;">
-        <div style="color:#f0901a;margin-bottom:4px;">${s.label}</div>
-        <pre style="background:#080a0d;padding:10px;border-radius:3px;overflow:auto;max-height:200px;white-space:pre-wrap;word-break:break-all;">${s.data || '(tom)'}</pre>
-      </div>
-    `).join('')}
-    <div style="color:#5e7399;margin-top:8px;">
-      Screenshot dette panelet og send til utvikleren for å fikse parserne.
-    </div>
+    <div style="color:#e05252;font-weight:bold;margin-bottom:8px;">⚠ DEBUG — send screenshot av dette til utvikler</div>
+
+    <div style="color:#f0901a;margin-bottom:4px;">KAMPLENKER (${links.length} funnet)</div>
+    <pre style="background:#080a0d;padding:8px;border-radius:3px;overflow:auto;max-height:100px;white-space:pre-wrap;margin-bottom:12px;">${links.join('\n') || '(ingen)'}</pre>
+
+    <div style="color:#f0901a;margin-bottom:4px;">TABELLRADER (første 40)</div>
+    <pre style="background:#080a0d;padding:8px;border-radius:3px;overflow:auto;max-height:200px;white-space:pre-wrap;margin-bottom:12px;">${rows.map((r,i)=>`[${i}] ${JSON.stringify(r)}`).join('\n') || '(ingen)'}</pre>
+
+    <div style="color:#f0901a;margin-bottom:4px;">SIDETEKST (linje 1–120)</div>
+    <pre style="background:#080a0d;padding:8px;border-radius:3px;overflow:auto;max-height:300px;white-space:pre-wrap;">${lines.slice(0,120).map((l,i)=>`${String(i+1).padStart(3,' ')}: ${l}`).join('\n') || '(tom)'}</pre>
   `;
 
-  document.getElementById('played-list').after(panel);
+  const target = document.getElementById('upcoming-list') || document.getElementById('played-list');
+  if (target) target.after(panel);
+  else document.getElementById('main').appendChild(panel);
 }
 
 
