@@ -921,8 +921,8 @@ body::before {
   <div class="pw-box">
     <div class="pw-label">// Tilgangskontroll</div>
     <div class="pw-title">Stratbook</div>
-    <input id="pw-input" type="password" placeholder="Passord" autocomplete="off" />
-    <button id="pw-btn">Logg inn</button>
+    <input id="pw-input" type="password" placeholder="Passord" autocomplete="off" onkeydown="if(event.key==='Enter')_checkPw()" />
+    <button id="pw-btn" onclick="_checkPw()">Logg inn</button>
     <div id="pw-err"></div>
   </div>
   <div class="pw-corner">INTERN BRUK // FJÆRKREBANDITTENE CS2 // 2026</div>
@@ -1770,15 +1770,9 @@ function _checkPw() {
 (function init() {
   try { renderStrats(); } catch(e) { console.error('renderStrats:', e); }
   try { renderKamper(); } catch(e) { console.error('renderKamper:', e); }
-
-  var btn = document.getElementById('pw-btn');
-  var inp = document.getElementById('pw-input');
-  if (btn) btn.addEventListener('click', _checkPw);
-  if (inp) inp.addEventListener('keydown', function(e){ if(e.key==='Enter') _checkPw(); });
-  if (inp) inp.focus();
-
   if (sessionStorage.getItem('_fkb_ok') === '1') _unlock();
 })();
+
 
 
 
