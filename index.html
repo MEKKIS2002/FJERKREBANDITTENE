@@ -1,200 +1,373 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="no">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CS2 T-Side Strategy Guide</title>
+<title>FJÆRKREBANDITTENE — STRATBOOK</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=Barlow:wght@400;500;600&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg: #0f1117;
-  --bg2: #181b24;
-  --bg3: #1f2330;
-  --border: #2a2f3e;
-  --text: #e2e8f0;
-  --text2: #8b93a8;
-  --blue: #3b82f6;
-  --blue-bg: #1e3a5f;
-  --green: #22c55e;
-  --green-bg: #14341e;
-  --orange: #f97316;
-  --orange-bg: #3b1c0a;
-  --red: #ef4444;
-  --red-bg: #3b0f0f;
-  --purple: #a78bfa;
-  --purple-bg: #2d1b5e;
-  --pink: #f472b6;
-  --pink-bg: #3b0f2a;
-  --accent: #f59e0b;
+  --bg:      #0c0c0e;
+  --bg2:     #131316;
+  --bg3:     #1a1a1f;
+  --bg4:     #202028;
+  --border:  #2a2a35;
+  --border2: #3a3a48;
+  --text:    #d8d8e0;
+  --text2:   #787890;
+  --text3:   #4a4a60;
+  --gold:    #c8a84b;
+  --gold2:   #e6c96a;
+  --gold-bg: #1e1708;
+  --orange:  #e07820;
+  --orange-bg: #1e1008;
+  --green:   #4caf6a;
+  --green-bg:#091a0f;
+  --blue:    #4a90d9;
+  --blue-bg: #081624;
+  --red:     #d94a4a;
+  --red-bg:  #1a0808;
+  --purple:  #9a72d9;
+  --purple-bg:#14092a;
+  --pink:    #d9609a;
+  --pink-bg: #1a0812;
+
+  --font-head: 'Barlow Condensed', sans-serif;
+  --font-body: 'Barlow', sans-serif;
+  --font-mono: 'Share Tech Mono', monospace;
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--font-body);
   background: var(--bg);
   color: var(--text);
-  padding: 24px 16px 60px;
-  max-width: 1400px;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ---- SCANLINE OVERLAY ---- */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.08) 2px,
+    rgba(0,0,0,0.08) 4px
+  );
+  pointer-events: none;
+  z-index: 1000;
+}
+
+/* ---- TOPBAR ---- */
+.topbar {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg2);
+  position: sticky;
+  top: 0;
+  z-index: 500;
+}
+
+.topbar-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 24px;
+  border-right: 1px solid var(--border);
+  background: var(--gold-bg);
+}
+
+.logo-icon {
+  width: 32px;
+  height: 32px;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.logo-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.topbar-team {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.team-tag {
+  font-family: var(--font-head);
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  color: var(--gold);
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.team-sub {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text3);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.topbar-nav {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  flex: 1;
+}
+
+.topbar-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 24px;
+  font-family: var(--font-head);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text2);
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  border-right: 1px solid var(--border);
+  transition: all 0.15s;
+  user-select: none;
+}
+
+.topbar-tab:hover { color: var(--text); background: var(--bg3); }
+.topbar-tab.active { color: var(--gold); border-bottom-color: var(--gold); background: var(--gold-bg); }
+
+.tab-icon { font-size: 14px; }
+
+.topbar-status {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 20px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text3);
+  letter-spacing: 0.05em;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 6px var(--green);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* ---- PAGE WRAPPER ---- */
+.page { display: none; }
+.page.active { display: block; }
+
+/* ---- MAP NAV (stratbook) ---- */
+.map-nav-wrapper {
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.map-nav-wrapper::-webkit-scrollbar { display: none; }
+
+.map-btn {
+  font-family: var(--font-head);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text2);
+  padding: 10px 18px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+.map-btn:hover { color: var(--text); }
+.map-btn.active { color: var(--gold); border-bottom-color: var(--gold); }
+
+/* ---- STRATBOOK CONTENT ---- */
+.strat-content {
+  padding: 24px;
+  max-width: 1600px;
   margin: 0 auto;
 }
 
-h1 {
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--accent);
-  margin-bottom: 4px;
-  letter-spacing: -0.3px;
-}
-.subtitle {
-  font-size: 13px;
-  color: var(--text2);
-  margin-bottom: 16px;
-}
-
-/* PLAYER LEGEND */
-.player-legend {
+/* ---- PLAYER LEGEND ---- */
+.legend {
   display: flex;
+  align-items: center;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 28px;
-  padding: 12px 16px;
+  gap: 6px;
+  padding: 10px 16px;
   background: var(--bg2);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  margin-bottom: 20px;
 }
-.legend-title {
-  width: 100%;
-  font-size: 11px;
+
+.legend-label {
+  font-family: var(--font-head);
+  font-size: 10px;
   font-weight: 700;
+  letter-spacing: 0.15em;
   text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: var(--text2);
-  margin-bottom: 4px;
+  color: var(--text3);
+  margin-right: 8px;
 }
+
+.player-tag {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  white-space: nowrap;
+  letter-spacing: 0.05em;
+  clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
+}
+
+.tag-s15t3m  { background: #1a2e4a; color: #60a5fa; }
+.tag-ole     { background: #14341e; color: #4ade80; }
+.tag-propit3 { background: #3b1c0a; color: #fb923c; }
+.tag-birk    { background: #3b0f0f; color: #f87171; }
+.tag-mekkis  { background: #2d1b5e; color: #c4b5fd; }
+
 .legend-item {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
-  color: var(--text2);
-}
-.player-tag {
-  display: inline-block;
-  font-size: 10px;
-  font-weight: 700;
-  padding: 2px 7px;
-  border-radius: 4px;
-  white-space: nowrap;
-  letter-spacing: 0.02em;
-}
-.tag-s15t3m  { background: #1a2e4a; color: #60a5fa; border: 1px solid #2563eb44; }
-.tag-ole     { background: #14341e; color: #4ade80; border: 1px solid #16a34a44; }
-.tag-propit3 { background: #3b1c0a; color: #fb923c; border: 1px solid #ea580c44; }
-.tag-birk    { background: #3b0f0f; color: #f87171; border: 1px solid #dc262644; }
-.tag-mekkis  { background: #2d1b5e; color: #c4b5fd; border: 1px solid #7c3aed44; }
-
-
-/* MAP NAV */
-.map-nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 40px;
-  position: sticky;
-  top: 0;
-  background: var(--bg);
-  padding: 10px 0;
-  z-index: 100;
-  border-bottom: 1px solid var(--border);
-}
-.map-nav a {
-  text-decoration: none;
-  padding: 6px 14px;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 500;
-  background: var(--bg3);
-  color: var(--text2);
-  border: 1px solid var(--border);
-  transition: all 0.15s;
-}
-.map-nav a:hover {
-  background: var(--blue-bg);
-  color: var(--blue);
-  border-color: var(--blue);
+  font-size: 11px;
+  color: var(--text3);
 }
 
-/* MAP SECTION */
-.map-section {
-  margin-bottom: 56px;
-  scroll-margin-top: 80px;
-}
+/* ---- MAP SECTION ---- */
+.map-section { display: none; }
+.map-section.active { display: block; }
+
 .map-header {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
   margin-bottom: 20px;
   padding-bottom: 12px;
-  border-bottom: 2px solid var(--accent);
-}
-.map-header h2 {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--accent);
-}
-.map-meta {
-  font-size: 13px;
-  color: var(--text2);
-  margin-top: 4px;
+  border-bottom: 1px solid var(--border);
 }
 
-/* STRAT GRID */
+.map-title {
+  font-family: var(--font-head);
+  font-size: 32px;
+  font-weight: 900;
+  color: var(--gold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.map-meta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text3);
+  padding-bottom: 4px;
+}
+
+.map-id {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text3);
+  padding-bottom: 5px;
+}
+
+/* ---- STRAT GRID ---- */
 .strat-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 12px;
 }
 
-/* STRAT CARD */
+/* ---- STRAT CARD ---- */
 .strat-card {
   background: var(--bg2);
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 16px;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 14px;
   transition: border-color 0.15s;
+  position: relative;
+  overflow: hidden;
 }
-.strat-card:hover { border-color: #3a4060; }
 
-.card-top {
+.strat-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--card-accent, var(--gold));
+  opacity: 0.6;
+}
+
+.strat-card:hover { border-color: var(--border2); }
+.strat-card:hover::before { opacity: 1; }
+
+.card-head {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px 10px;
 }
-.card-top-info { flex: 1; min-width: 0; }
 
 .strat-name {
-  font-size: 15px;
-  font-weight: 600;
+  font-family: var(--font-head);
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   color: var(--text);
-  line-height: 1.3;
-  margin-bottom: 3px;
-}
-.strat-inspired {
-  font-size: 11px;
-  color: var(--text2);
+  line-height: 1.2;
 }
 
-/* TYPE BADGES */
-.badge {
+.strat-ref {
   font-size: 10px;
-  font-weight: 700;
-  padding: 3px 8px;
-  border-radius: 4px;
+  color: var(--text3);
+  margin-top: 2px;
+  font-family: var(--font-mono);
+}
+
+.badge {
+  font-family: var(--font-head);
+  font-size: 10px;
+  font-weight: 800;
+  padding: 3px 10px;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
   white-space: nowrap;
   flex-shrink: 0;
+  clip-path: polygon(5px 0%, 100% 0%, calc(100% - 5px) 100%, 0% 100%);
 }
+
 .badge-execute { background: var(--blue-bg); color: var(--blue); }
 .badge-split   { background: var(--green-bg); color: var(--green); }
 .badge-default { background: var(--purple-bg); color: var(--purple); }
@@ -202,636 +375,573 @@ h1 {
 .badge-pistol  { background: var(--orange-bg); color: var(--orange); }
 .badge-fake    { background: var(--pink-bg); color: var(--pink); }
 
-.desc {
-  font-size: 13px;
+.card-desc {
+  font-size: 12px;
   color: var(--text2);
   line-height: 1.6;
+  padding: 0 16px 12px;
 }
 
-/* SECTION LABEL */
-.label {
-  font-size: 10px;
+.card-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+}
+
+/* ---- STEPS ---- */
+.card-steps {
+  padding: 12px 16px;
+}
+
+.section-label {
+  font-family: var(--font-head);
+  font-size: 9px;
   font-weight: 700;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: var(--text2);
-  margin-bottom: 6px;
+  color: var(--text3);
+  margin-bottom: 8px;
 }
 
-/* STEPS */
 .steps {
   list-style: none;
   display: flex;
   flex-direction: column;
   gap: 5px;
 }
+
 .steps li {
   display: flex;
-  gap: 8px;
-  font-size: 12.5px;
-  color: var(--text);
-  line-height: 1.5;
+  gap: 10px;
   align-items: flex-start;
 }
+
 .step-num {
-  min-width: 18px;
+  width: 18px;
   height: 18px;
-  border-radius: 50%;
-  background: var(--bg3);
+  background: var(--bg4);
+  border: 1px solid var(--border2);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--text2);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--gold);
   flex-shrink: 0;
-  margin-top: 1px;
+  margin-top: 2px;
 }
-.step-content {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
+
+.step-body { flex: 1; min-width: 0; }
+
 .step-players {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: 3px;
+  margin-bottom: 3px;
 }
 
-/* UTILITY */
+.step-text {
+  font-size: 12px;
+  color: var(--text);
+  line-height: 1.4;
+}
+
+/* ---- UTILITY ---- */
+.card-util {
+  padding: 10px 16px 14px;
+}
+
 .util-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 5px;
 }
+
 .util-item {
   background: var(--bg3);
-  border-radius: 6px;
-  padding: 5px 9px;
+  border: 1px solid var(--border);
+  padding: 4px 9px;
 }
+
 .util-name {
-  font-size: 11px;
-  font-weight: 600;
+  font-family: var(--font-mono);
+  font-size: 10px;
   color: var(--text);
 }
+
 .util-detail {
   font-size: 10px;
-  color: var(--text2);
+  color: var(--text3);
   margin-top: 1px;
 }
 
-/* DIVIDER between sections */
-.card-divider {
+/* ============================
+   SCHEDULE PAGE
+   ============================ */
+.schedule-wrapper {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.schedule-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.schedule-title {
+  font-family: var(--font-head);
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gold);
+  line-height: 1;
+}
+
+.schedule-subtitle {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text3);
+  margin-top: 4px;
+}
+
+/* ---- ADD MATCH FORM ---- */
+.add-match-btn {
+  font-family: var(--font-head);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  background: var(--gold-bg);
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  padding: 8px 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s;
+}
+.add-match-btn:hover { background: var(--gold); color: var(--bg); }
+
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  z-index: 900;
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+
+.modal {
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  padding: 0;
+  width: 480px;
+  max-width: 96vw;
+  position: relative;
+}
+
+.modal-head {
+  background: var(--gold-bg);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modal-title {
+  font-family: var(--font-head);
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.modal-close {
+  background: none;
   border: none;
-  border-top: 1px solid var(--border);
+  color: var(--text2);
+  font-size: 20px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 2px 6px;
+}
+.modal-close:hover { color: var(--text); }
+
+.modal-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.form-label {
+  font-family: var(--font-head);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text3);
+}
+
+.form-input, .form-select, .form-textarea {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 8px 10px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  outline: none;
+  transition: border-color 0.15s;
+  width: 100%;
+}
+
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus { border-color: var(--gold); }
+
+.form-select option { background: var(--bg3); }
+.form-textarea { resize: vertical; min-height: 70px; }
+
+.form-submit {
+  font-family: var(--font-head);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  background: var(--gold);
+  border: none;
+  color: var(--bg);
+  padding: 10px 24px;
+  cursor: pointer;
+  width: 100%;
+  margin-top: 4px;
+  transition: all 0.15s;
+}
+.form-submit:hover { background: var(--gold2); }
+
+/* ---- MATCH GROUPS ---- */
+.match-group {
+  margin-bottom: 28px;
+}
+
+.group-label {
+  font-family: var(--font-head);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.group-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* ---- MATCH CARD ---- */
+.match-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: 80px 1fr auto;
+  align-items: center;
+  gap: 0;
+  margin-bottom: 8px;
+  transition: border-color 0.15s;
+  position: relative;
+  overflow: hidden;
+}
+
+.match-card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--match-color, var(--gold));
+}
+
+.match-card:hover { border-color: var(--border2); }
+
+.match-datetime {
+  padding: 14px 0 14px 18px;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.match-day {
+  font-family: var(--font-head);
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--gold);
+  line-height: 1;
+}
+
+.match-month {
+  font-family: var(--font-head);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text3);
+}
+
+.match-time-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text2);
+  margin-top: 4px;
+}
+
+.match-info {
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.match-title {
+  font-family: var(--font-head);
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.match-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.match-maps {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.map-chip {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  padding: 2px 7px;
+  background: var(--bg4);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  text-transform: uppercase;
+}
+
+.match-note {
+  font-size: 11px;
+  color: var(--text3);
+  font-style: italic;
+}
+
+.match-type-badge {
+  font-family: var(--font-head);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  clip-path: polygon(5px 0%, 100% 0%, calc(100% - 5px) 100%, 0% 100%);
+}
+
+.type-scrim { background: #0f1e33; color: #4a90d9; }
+.type-ranked { background: #1a0f00; color: #e07820; }
+.type-practice { background: #091a0f; color: #4caf6a; }
+.type-tournament { background: #1a0008; color: #d94a9a; }
+
+.match-actions {
+  padding: 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-end;
+}
+
+.match-delete {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text3);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 4px 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.match-delete:hover { border-color: var(--red); color: var(--red); }
+
+.match-result {
+  font-family: var(--font-head);
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+.result-w { color: var(--green); }
+.result-l { color: var(--red); }
+.result-d { color: var(--text2); }
+.result-pending { color: var(--text3); font-size: 10px; letter-spacing: 0.08em; }
+
+.empty-state {
+  padding: 48px 24px;
+  text-align: center;
+  border: 1px solid var(--border);
+  background: var(--bg2);
+}
+
+.empty-icon { font-size: 32px; margin-bottom: 12px; opacity: 0.4; }
+.empty-text {
+  font-family: var(--font-head);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text3);
+}
+.empty-sub {
+  font-size: 12px;
+  color: var(--text3);
+  margin-top: 6px;
+  font-family: var(--font-mono);
+}
+
+/* ---- RESULT INPUT IN MODAL ---- */
+.result-group {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+.result-btn {
+  font-family: var(--font-head);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg3);
+  color: var(--text2);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.result-btn.sel-W { background: var(--green-bg); border-color: var(--green); color: var(--green); }
+.result-btn.sel-L { background: var(--red-bg); border-color: var(--red); color: var(--red); }
+.result-btn.sel-D { background: var(--bg4); border-color: var(--border2); color: var(--text); }
+.result-btn.sel-TBD { background: var(--gold-bg); border-color: var(--gold); color: var(--gold); }
+
+/* ---- STATS BAR ---- */
+.stats-bar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.stat-cell {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  padding: 12px 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-cell::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--cell-accent, var(--gold));
+  opacity: 0.5;
+}
+
+.stat-val {
+  font-family: var(--font-head);
+  font-size: 28px;
+  font-weight: 900;
+  color: var(--cell-color, var(--gold));
+  line-height: 1;
+}
+
+.stat-label {
+  font-family: var(--font-head);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-top: 4px;
+}
+
+/* ---- RESPONSIVE ---- */
+@media (max-width: 700px) {
+  .strat-grid { grid-template-columns: 1fr; }
+  .stats-bar { grid-template-columns: repeat(2, 1fr); }
+  .match-card { grid-template-columns: 60px 1fr; }
+  .match-actions { display: none; }
+  .form-row { grid-template-columns: 1fr; }
+  .topbar-logo { padding: 0 14px; }
+  .team-tag { font-size: 14px; }
+  .topbar-tab { padding: 0 12px; font-size: 11px; }
 }
 </style>
 </head>
 <body>
 
-<h1>Fjærkrebandittene Stratbook</h1>
+<!-- TOPBAR -->
+<header class="topbar">
+  <div class="topbar-logo">
+    <div class="logo-icon">
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <polygon points="16,2 30,26 2,26" fill="none" stroke="#c8a84b" stroke-width="1.5"/>
+        <polygon points="16,9 24,22 8,22" fill="#c8a84b" opacity="0.2"/>
+        <line x1="16" y1="2" x2="16" y2="26" stroke="#c8a84b" stroke-width="0.5" opacity="0.4"/>
+        <circle cx="16" cy="14" r="2" fill="#c8a84b"/>
+      </svg>
+    </div>
+    <div class="topbar-team">
+      <div class="team-tag">Fjærkrebandittene</div>
+      <div class="team-sub">T-Side Protocol v2.4</div>
+    </div>
+  </div>
 
-
-<div class="player-legend">
-  <div class="legend-title">Spillere</div>
-  <div class="legend-item"><span class="player-tag tag-s15t3m">S15T3M</span> IGL · AWP/Lurk/Rifle · Full utility</div>
-  <div class="legend-item"><span class="player-tag tag-ole">Ole</span> Rifler · Full utility</div>
-  <div class="legend-item"><span class="player-tag tag-propit3">propit3</span> Rifler/Entry · Second IGL · Full utility</div>
-  <div class="legend-item"><span class="player-tag tag-birk">Birk</span> Entry/Second AWP · Ingen utility</div>
-  <div class="legend-item"><span class="player-tag tag-mekkis">Mekkis</span> Lurker/Entry · Noe utility</div>
-</div>
-
-<nav class="map-nav" id="mapNav"></nav>
-<div id="content"></div>
-
-<script>
-function p(names) {
-  const map = {
-    'S15T3M': 's15t3m',
-    'Ole': 'ole',
-    'propit3': 'propit3',
-    'Birk': 'birk',
-    'Mekkis': 'mekkis'
-  };
-  return names.map(n => `<span class="player-tag tag-${map[n]}">${n}</span>`).join('');
-}
-
-const maps = {
-  mirage: {
-    name: "Mirage",
-    meta: "CT-sided (54% CT win rate) — mid control is the backbone of every successful T-side",
-    strats: [
-      { id: "mid-split", name: "Mid-to-B split", type: "split", badge: "badge-split", inspired: "", desc: "Ta Top-Mid og Short kontroll, for å så ta B site samtidig med Apps spillere",
-        steps: [
-          { text: "3 players tar top-mid: smoke window, smoke connector, flash over to peek", players: ["S15T3M","Ole","Birk"] },
-          { text: "2 players enter B apps — lurk for timing", players: ["propit3","Mekkis"] },
-          { text: "Short players dropper inn på B site når apps players entry frag", players: ["Ole","Birk"] },
-          { text: "Smoke window og door — split siten fra Short og Apps", players: ["Birk","Ole", "Mekkis", "propit3", "S15T3M"] },
-          { text: "Plant mot Short. Post-plant: én holder bench, én short", players: [""] }
-        ],
-        utility: [{name:"Smokes x3",detail:"Window, connector, B"},{name:"Flashes x2",detail:"Over short, bench"},{name:"Molotov",detail:"Car"}]
-      },
-      { id: "a-execute", name: "A site full execute", type: "execute", badge: "badge-execute", inspired: "", desc: "Standard 5-man A execute med smoke cover på CT, jungle og stairs. En av de mest pålitelige buy-round strats på Mirage.",
-        steps: [
-          { text: "Smoke CT spawn, jungle, stairs — throw all simultaneously", players: ["S15T3M","propit3"] },
-          { text: "Molotov under balcony for å cleane default stack", players: ["Ole"] },
-          { text: "3 players ramp, 1 via palace, 1 watches B/mid", players: ["Birk","propit3","Mekkis","S15T3M","Ole"] },
-          { text: "Flash into A site over ramp — entry fragger peeks first", players: ["Birk"] },
-          { text: "Plant default eller short side avhengig av CT press", players: [""] },
-          { text: "Post-plant: jungle/CT angles — 1 player palace, 1 ramp", players: [""] }
-        ],
-        utility: [{name:"Smokes x3",detail:"CT, jungle, stairs"},{name:"Molotov",detail:"Under balcony"},{name:"Flashes x3",detail:"Ramp, palace pop"}]
-      },
-      { id: "mid-default", name: "Mid pressure default", type: "default", badge: "badge-default", inspired: "", desc: "Slow default bygd rundt mid-kontroll. Contest window, ta underpass-kontroll, samle info før du committer til en side.",
-        steps: [
-          { text: "Smoke window room tidlig — deretter A - Lurk", players: ["S15T3M"] },
-          { text: "Ta top-mid og short control uten å over-committe", players: ["Ole","Birk"] },
-          { text: "2 players spiller default B (apps + under)", players: ["propit3","Mekkis"] },
-          { text: "Late-round: convert mid control til connector eller B short push", players: ["S15T3M","propit3"] },
-          { text: "Call basert på CT rotation reads", players: ["S15T3M"] }
-        ],
-        utility: [{name:"Smoke x1",detail:"Window"},{name:"Flash x1",detail:"Top mid"},{name:"Molotov x1",detail:"Short site reaction"}]
-      },
-      { id: "b-rush", name: "5-man B rush", type: "rush", badge: "badge-rush", inspired: "", desc: "Speed-based full team B rush via apartments. Overwhelm B-defenderen før CT kan rotere fra A eller mid.",
-        steps: [
-          { text: "Alle 5 beiner B apps", players: ["Birk","Mekkis","propit3","Ole","S15T3M"] },
-          { text: "1 player smoker window, og flasher over", players: ["Ole","propit3", "S15T3M"] },
-          { text: "Første 2 hopper ut vinduet", players: [""] },
-          { text: "Ta site og plant umiddelbart for apps", players: [""] },
-          { text: "2 players holder short/CT rotate, 1 holder apps flank", players: [""] }
-        ],
-        utility: [{name:"Smoke x1",detail:"CT B Window"},{name:"Flash x2",detail:"Bench, into site"}]
-      },
-      { id: "fake-a-b", name: "A fake into B", type: "fake", badge: "badge-fake", inspired: "", desc: "Commit 3 players til A med full utility for å dra CT rotation, redirect 2 til B for et clean take.",
-        steps: [
-          { text: "3 players kaster full A utility: smokes, flashes, molotov", players: ["S15T3M","Mekkis","propit3"] },
-          { text: "Lag støy og presence ved ramp og palace", players: ["S15T3M","Mekkis","propit3"] },
-          { text: "Call ut når CT roterer fra B mot A", players: ["Birk", "Ole"] },
-          { text: "2 lurkers rusher umiddelbart B apps — clean site", players: ["Ole","Birk"] },
-          { text: "Plant fort — 3 players roterer tilbake som post-plant support", players: ["S15T3M","Mekkis","propit3"] }
-        ],
-        utility: [{name:"Smokes x3",detail:"CT, stairs, jungle"},{name:"Flash x2",detail:"Ramp, palace"},{name:"Molotov x1",detail:"Under balcony"}]
-      },
-      { id: "pistol-mirage", name: "Pistol: Mid B Split", type: "pistol", badge: "badge-pistol", inspired: "", desc: "På pistol-runder, ta mid-kontroll aggressivt med 3-man window/short push mens 2 presser B.",
-        steps: [
-          { text: "Send 2 players til B apps (ingen utility — pure timing) med kevlar", players: ["propit3","Mekkis"] },
-          { text: "3 players pusher mid: smoke window, flash over top-mid", players: ["S15T3M","Ole","Birk"] },
-          { text: "Contest connector og short — deny CT mid-presence", players: ["Ole","Birk"] },
-          { text: "Hvis mid er vunnet: collapse B short med numbers advantage", players: ["S15T3M","Ole","Birk"] },
-          { text: "B players lurker apps og staller til mid er secured", players: ["propit3","Mekkis"] }
-        ],
-        utility: [{name:"Smokes x2",detail:"Window, connector"},{name:"Flashes x2",detail:"Top mid"},{name:"Molotov x1",detail:"Connector/short"}]
-      }
-    ]
-  },
-  inferno: {
-    name: "Inferno",
-    meta: "Slightly T-sided (53% T win rate) — banana control determines round outcome",
-    strats: [
-      { id: "banana-b", name: "Banana control to B execute", type: "execute", badge: "badge-execute", inspired: "", desc: "Etabler dominant banana-kontroll med 3 players, execute B site med full utility.",
-        steps: [
-          { text: "3 players fighter for banana: smoke CT og car, molotov top banana", players: ["S15T3M","Ole","propit3"] },
-          { text: "Gri for banana-kontroll — ikke commit siten før den er vunnet", players: ["Ole","propit3"] },
-          { text: "Kast smoke inn i B site (CT cross, coffin)", players: ["S15T3M","Ole"] },
-          { text: "Flash over balcony og entry frag inn på siten", players: ["Birk"] },
-          { text: "Plant bak coffins — beste post-plant posisjon", players: ["propit3","S15T3M"] },
-          { text: "2 players short apps som fake/support flank-watch", players: ["Mekkis","S15T3M"] }
-        ],
-        utility: [{name:"Smokes x3",detail:"CT, car, coffin"},{name:"Molotov x2",detail:"Top banana, site"},{name:"Flash x2",detail:"Over balcony"}]
-      },
-      { id: "a-split", name: "Apps + arch A split", type: "split", badge: "badge-split", inspired: "", desc: "Split A fra apartments og arch simultant, fanger CT anchor i en crossfire. Smoke CT og library, molotov pit.",
-        steps: [
-          { text: "2 players pusher apartments med smoke short og flash", players: ["Birk","propit3"] },
-          { text: "2 players pusher arch — én gir flash-support", players: ["S15T3M","Ole"] },
-          { text: "Smoke CT cross, library; molotov pit tidlig", players: ["Ole","propit3"] },
-          { text: "Time spliten: arch-players peeker når apps-players entrer", players: ["S15T3M","Ole"] },
-          { text: "Plant i default eller pit-side basert på gjenværende CTs", players: ["propit3","Birk"] },
-          { text: "1 lurk banana som flank-denial", players: ["Mekkis"] }
-        ],
-        utility: [{name:"Smokes x3",detail:"CT cross, library, short"},{name:"Molotov x1",detail:"Pit"},{name:"Flash x3",detail:"Apps, arch, site"}]
-      },
-      { id: "mid-control", name: "Mid control into A", type: "default", badge: "badge-default", inspired: "", desc: "Contest mid tidlig via banana og T ramp — samle info og bruk sen mid-access til å splitte A eller bakstabber B-defenders.",
-        steps: [
-          { text: "Smoke top mid, kast 1 molotov på banana for å stalle", players: ["S15T3M","Ole"] },
-          { text: "2 players pusher mid aggressivt for top-mid kontroll", players: ["propit3","Mekkis"] },
-          { text: "Lett banana-press — ikke trade unødvendig", players: ["Ole"] },
-          { text: "Bruk mid til å kutte CT-rotasjoner og samle info", players: ["S15T3M"] },
-          { text: "Late round: enten A execute fra apartments eller B take via mid", players: ["S15T3M","Birk","propit3"] }
-        ],
-        utility: [{name:"Smoke x2",detail:"Top mid, CT"},{name:"Molotov x1",detail:"Top banana"},{name:"Flash x2",detail:"Mid entry"}]
-      },
-      { id: "b-rush-inferno", name: "5-man B rush", type: "rush", badge: "badge-rush", inspired: "Falcons (surprise element med star firepower)", desc: "Rush B via banana med hele laget — smoke CT og bruk molotovs for å nekte enhver hold.",
-        steps: [
-          { text: "Alle 5 rusher banana — grenades på top banana tidlig", players: ["Birk","Mekkis","propit3","Ole","S15T3M"] },
-          { text: "Smoke CT/B cross når dere entrer, molotov B car", players: ["Ole","propit3"] },
-          { text: "Flash over balcony for å pushe inn på siten", players: ["Mekkis"] },
-          { text: "Entry player peeker venstre (dark/coffins), andre flommer inn", players: ["Birk"] },
-          { text: "Plant coffin-side umiddelbart", players: ["propit3","S15T3M"] },
-          { text: "2 players holder banana/CT entry, andre holder site-angles", players: ["S15T3M","Ole","Mekkis"] }
-        ],
-        utility: [{name:"Smokes x2",detail:"CT, B cross"},{name:"Molotov x2",detail:"Top banana, car"},{name:"Flash x2",detail:"Over balcony"}]
-      },
-      { id: "a-fake-b", name: "A fake to B banana", type: "fake", badge: "badge-fake", inspired: "", desc: "Commit aggressiv apps-push med smoke og flashes for å dra A-rotasjon, redirect laget gjennom banana for et clean B take.",
-        steps: [
-          { text: "2 players pusher apartments aggressivt — smoke short, flash deep", players: ["propit3","Ole"] },
-          { text: "Lag så mye støy og presence som mulig", players: ["propit3","Ole"] },
-          { text: "3 players tar stille banana-kontroll i mellomtiden", players: ["S15T3M","Birk","Mekkis"] },
-          { text: "Når A-rotasjon committer, call execute på B", players: ["S15T3M"] },
-          { text: "Smoke CT fra banana, entry frag umiddelbart", players: ["Birk","Mekkis"] }
-        ],
-        utility: [{name:"Smokes x3",detail:"Apps short, CT, balcony"},{name:"Flash x2",detail:"Apps, site flash"},{name:"Molotov x1",detail:"B car"}]
-      },
-      { id: "pistol-inferno", name: "Pistol: 5-man B rush", type: "pistol", badge: "badge-pistol", inspired: "", desc: "5-player banana rush er den dominante Inferno pistol-strategien.",
-        steps: [
-          { text: "Buy: 3x kevlar, 1x smoke, 1x molotov", players: ["Ole","propit3","S15T3M"] },
-          { text: "Alle 5 sprinter banana ved rundestart", players: ["Birk","Mekkis","propit3","Ole","S15T3M"] },
-          { text: "Kast molotov på top banana for å tvinge CTs tilbake", players: ["propit3"] },
-          { text: "Smoke CT når dere tar banana-kontroll", players: ["Ole"] },
-          { text: "Flash inn i B site over balcony — flood inn", players: ["Birk"] },
-          { text: "Plant coffin-side, hold CT og balcony-angles", players: ["S15T3M","Mekkis"] }
-        ],
-        utility: [{name:"Smoke x1",detail:"CT cross"},{name:"Molotov x1",detail:"Top banana"},{name:"Flash x1",detail:"Over balcony"}]
-      }
-    ]
-  },
-  nuke: {
-    name: "Nuke",
-    meta: "Most CT-sided map (57% CT win rate) — vertical play og tålmodighet er nøkkelen",
-    strats: [
-      { id: "outside-b", name: "Outside and Ramp to B", type: "execute", badge: "badge-execute", inspired: "", desc: "Ta outside-kontroll tidlig for å true både A og B (secret). Outside-dominans tvinger CTs til å spre seg.",
-        steps: [
-          { text: "Smoke walls og main tidlig ", players: ["S15T3M","Ole","propit3"] },
-          { text: "3 players tar yard — contest silo og outside skikkelig", players: ["Birk","propit3", "Mekkis"] },
-          { text: "2 players tar lobby/ramp kontroll", players: ["S15T3M","Ole"] },
-          { text: "Outside players går ned og tar secret kontroll", players: ["Birk", "propit3", "Mekkis"] },
-          { text: "Ramp og Outside players tar site samtidig og planter", players: ["propit3","S15T3M", "Ole", "Birk", "Mekkis"] }
-        ],
-        utility: [{name:"Smokes x4",detail:"Walls, Main, Afterplant, Ramp"},{name:"Flash x3",detail:"Secret, lower entry, silo"},{name:"Molotov x2",detail:"Secret, Redboks"}]
-      },
-      { id: "upper-a-split", name: "Ramp + Hut A split", type: "split", badge: "badge-split", inspired: "", desc: "Press A simultant fra T ramp og gjennom hut, fanger A site CT mellom to entry-angles.",
-        steps: [
-          { text: "1 players committer hardt til T ramp med smoke ramp room", players: ["propit3"] },
-          { text: "3 players går hut og venter på utility. Pusher på flash", players: ["Mekkis","Birk", "Ole"] },
-          { text: "Kaster smoke Heaven, Molly top Hut og Flash", players: ["S15T3M"] },
-          { text: "Time spliten: ramp går når hut players entryer", players: ["Birk","Ole", "propit3", "Mekkis"] },
-          { text: "Smoke Main og Heaven, plant default A", players: [""] },
-          { text: "Hold ramp room + outside post-plant", players: [""] }
-        ],
-        utility: [{name:"Smokes x3",detail:"Ramp room, Main, Heaven"},{name:"Molotov x1",detail:"Default A"},{name:"Flash x2",detail:"Ramp, hut peek"}]
-      },
-      { id: "nuke-default", name: "Outside Fake ", type: "fake", badge: "badge-default", inspired: "", desc: "Kaster outside smokes (walls), hvorav 1 lurker outside og resterende 4 går sakte mot ramp",
-        steps: [
-          { text: "1 player smoker walls outside, ta yard og outside kontroll. Ikke dø", players: ["Ole"] },
-          { text: "4 players contester ramp", players: ["Birk","propit3", "Mekkis", "S15T3M"] },
-          { text: "Outside prøver på timing main/hell/secret når resterende tar ramp", players: ["Ole"] },
-          { text: "Mid-round call basert på CT-tall outside vs inside", players: ["S15T3M", "propit3"] },
-          { text: "Execute siten med numbers advantage sent i runden", players: [""] }
-        ],
-        utility: [{name:"Smoke x2",detail:"Outside, ramp lobby"},{name:"Flash x1",detail:"Outside wall"},{name:"Molotov x1",detail:"CT aggression denial"}]
-      },
-      { id: "secret-b-rush", name: "Hut push + Singledoor Utility", type: "rush", badge: "badge-rush", inspired: "", desc: "3 players rusher hut, 1 player molly top hut og 1 player utility singledoor",
-        steps: [
-          { text: "3 players beiner hut — 1 legger smoke for molly", players: ["Birk","propit3", "Mekkis"] },
-          { text: "1 players kaster, HE door, Smoke main og flasher bak fakevent", players: ["Ole"] },
-          { text: "1 player mollyer top hut og holder lobby flank", players: ["S15T3M"] },
-          { text: "Plante safe og hold afterplant", players: [""] },
-        ],
-        utility: [{name:"Smoke x2",detail:"Molly og Main"},{name:"Flash x3",detail:"Fakevent"},{name:"Molotov x1",detail:"Default lower corner"}]
-      },
-      { id: "nuke-fake", name: "Default", type: "default", badge: "badge-fake", inspired: "", desc: "3 players outside, 2 players lobby/ramp",
-        steps: [
-          { text: "3 players går outside, smoker walls, tar kontroll", players: ["propit3","Birk","Mekkis"] },
-          { text: "2 players tar lobby og radio kontroll", players: ["Ole", "S15T3M"] },
-          { text: "Spiller runden på info. Outside spillere prøver å få åpninger", players: ["propit3", "Birk", "Mekkis"] },
-          { text: "Committer mot den svakere siten", players: ["S15T3M","propit3"] }
-        ],
-        utility: [{name:"Smokes x2",detail:"Outside, Main"},{name:"Flash x2",detail:"Outside"},{name:"Molotov x2",detail:"Secret, A site"}]
-      },
-      { id: "pistol-nuke", name: "Pistol: Ramp Rush alle mann", type: "pistol", badge: "badge-pistol", inspired: "Finland SPESIAL", desc: "Alle 5 bare beiner ramp. Dreper vi ramp går vi ned, dropper han går vi heaven",
-        steps: [
-          { text: "3 players kjøper kevlar, 1 player kjøper x1 smoke, 2x flash, 1 player kjøper 1x molly", players: ["S15T3M", "Ole"] },
-          { text: "5 players pusher ramp — første player hopper rundt hjørnene med hodet ned", players: ["Ole","propit3","S15T3M", "Mekkis", "Birk"] },
-          { text: "Dreper vi Ramp går vi ned, dropper han går vi Heaven", players: ["S15T3M"] },
-          { text: "Planter og spiller smart i afterplant", players: ["S15T3M"] }
-        ],
-        utility: [{name:"Smoke x1",detail:"Hell/Main"},{name:"Flash x2",detail:"Ramp"}]
-      }
-    ]
-  },
-  overpass: {
-    name: "Overpass",
-    meta: "CT-sided (55% CT win rate) — monster og bathrooms-kontroll er nøkkelen for T-side",
-    strats: [
-      { id: "b-monster", name: "B site monster execute", type: "rush", badge: "badge-execute", inspired: "", desc: "Beine monster som et reint helvete",
-        steps: [
-          { text: "4 players pusher monster fort", players: ["Ole","propit3", "S15T3M", "Birk", "Mekkis"] },
-          { text: "1 player gir water-flash x2 og går short - Den med dårligst spawn", players: ["Ole", "propit3", "S15T3M", "Birk", "Mekkis"] },
-          { text: "Plant safe - hold B short og CT post-plant", players: [""] },
-        ],
-        utility: [{name:"Smokes x3",detail:"Short, Heaven, Bridge"},{name:"Flash x3",detail:"B short, site"},{name:"Molotov x1",detail:"Toxic"}]
-      },
-      { id: "a-split-op", name: "A site Long-Banana split", type: "split", badge: "badge-split", inspired: "", desc: "Split A via long og A Banana simultant. Smoke Bank og Dumster for å hindre rotasjoner.",
-        steps: [
-          { text: "2 players pusher long aggressivt — tar kontroll", players: ["S15T3M","propit3"] },
-          { text: "2 players tar toilets og gjør klar Bank og Dumster smoke", players: ["Ole", "Birk"] },
-          { text: "1 player lurker B short/monster. Spiller på info. Ikke dø!", players: ["Mekkis"] },
-          { text: "Short players smoker Bank og Dumster, long player molly truck og ta site simultant", players: ["S15T3M", "propit3", "Ole", "Birk"] },
-          { text: "Flash inn på siten — plant default eller heaven-side", players: [""] },
-        ],
-        utility: [{name:"Smokes x3",detail:"Bank, Dumster, Toilets"},{name:"Flash x3",detail:"Long, Banana, Site"},{name:"Molotov x1",detail:"Truck"}]
-      },
-      { id: "water-default", name: "Default", type: "default", badge: "badge-default", inspired: "", desc: "Ta mid/fountain, connector og B short kontroll",
-        steps: [
-          { text: "2 players tar short — holder short passivt", players: ["propit3","Ole"] },
-          { text: "1 player tar connector kontroll", players: ["S15T3M"] },
-          { text: "2 player tar mid/fountain kontroll", players: ["Birk", "Mekkis"] },
-          { text: "Les CT-posisjoner — hvis A holdes passivt, roter B og motsatt", players: ["S15T3M", "Ole", "propit3", "Mekkis", "Birk"] },
-          { text: "Late execute med smokes på tilegnet posisjon", players: ["S15T3M","propit3","Ole"] }
-        ],
-        utility: [{name:"Smoke x2",detail:"CT, short site"},{name:"Flash x2",detail:"Short, mid/long"},{name:"Molotov x1",detail:"Reactive use"}]
-      },
-      { id: "b-fake-a", name: "B fake into A long", type: "fake", badge: "badge-fake", inspired: "", desc: "Commit 2 players til tung B monster-press med utility, avled deretter til A long for en rask take.",
-        steps: [
-          { text: "2 players smoker og flasher B aggressivt — maks støy", players: ["Ole","S15T3M"] },
-          { text: "1 player blir igjen B etter utility, den andre regrouper med resten på A", players: ["Ole", "S15T3M"] },
-          { text: "3 players pusher A long stille — ingen utility ennå", players: ["Birk","Mekkis","propit3"] },
-          { text: "Når B CT roterer — execute A med Bank/Dumster smokes", players: ["Birk", "Mekkis", "propit3"] },
-          { text: "Planter for Banana og holder", players: [""] }
-        ],
-        utility: [{name:"Smokes x3",detail:"Monster fake + A Bank, Dumster"},{name:"Flash x2",detail:"B fake, A entry"},{name:"Molotov x1",detail:"B fake"}]
-      },
-      { id: "pistol-op", name: "Pistol: B rush Monster", type: "pistol", badge: "badge-pistol", inspired: "", desc: "Rush B via monster med en rask smoke på short. Kjøp kevlar på entry fraggers og bein som faen.",
-        steps: [
-          { text: "3 players kjøper kevlar, 1 player kjøper 1x smoke og 1x molly, 1 player kjøper 2x flash ", players: ["Birk","Mekkis", "propit3", "Ole", "S15T3M"] },
-          { text: "4 players rusher monster, 1 player flashes 2x og går short", players: ["Birk","Mekkis","propit3","Ole","S15T3M"] },
-          { text: "Smoke short umiddelbart når dere er ute monster", players: ["S15T3M"] },
-          { text: "Ta site og plant fort", players: ["Birk","Mekkis", "propit3", "Ole", "S15T3M"] },
-          { text: "Hold short og CT wall med pistoler — ikke over-peek", players: [""] }
-        ],
-        utility: [{name:"Smoke x1",detail:"B short"},{name:"Flash x2",detail:"Over site, pillar flash"},{name:"Molotov x1",detail:"Toxic"}]
-      }
-    ]
-  },
-  ancient: {
-    name: "Ancient",
-    meta: "Slightly CT-sided (51% CT win rate) — mid og cave-kontroll definerer rundene",
-    strats: [
-      { id: "mid-b-anc", name: "Mid control into B execute", type: "execute", badge: "badge-execute", inspired: "", desc: "Ta mid og cave-kontroll, swing deretter B site fra to retninger. Mid-kontroll kutter rotasjoner.",
-        steps: [
-          { text: "2 players pusher mid — smoke redroom, flash top mid", players: ["Birk","propit3"] },
-          { text: "1 player pusher cave fra T side med flash", players: ["Ole"] },
-          { text: "Smoke Long og Short — commit til B når cave er vunnet", players: ["Ole","propit3"] },
-          { text: "Mid player blir med B når entry", players: ["Birk"] },
-          { text: "Entry gjennom ramp eller cave simultant", players: ["Birk","Mekkis"] },
-          { text: "Plant default — hold cave og CT angles", players: [""] }
-        ],
-        utility: [{name:"Smokes x3",detail:"redroom, CT, ramp"},{name:"Flash x3",detail:"Mid, cave, site"},{name:"Molotov x1",detail:"B default"}]
-      },
-      { id: "a-execute-anc", name: "Mid A - Split", type: "execute", badge: "badge-execute", inspired: "", desc: "Execute A via ruins og short/temple simultant. Smoke CT og triple box, molotov default spot.",
-        steps: [
-          { text: "3 players går mid, 2 players via main", players: ["Birk","Mekkis","Ole","S15T3M","propit3"] },
-          { text: "Smoke redroom, donut, ta mid kontroll", players: ["Mekkis","Ole","Birk"] },
-          { text: "Smoke CT, Temple, Molly broky", players: ["propit3", "S15T3M"] },
-          { text: "Ta donut, med molly og flash", players: ["Birk", "Mekkis"] },
-          { text: "Tar siten samtidlig fra A main og Donut", players: [""] },
-          { text: "Plant default — hold temple og CT post-plant", players: [""] }
-        ],
-        utility: [{name:"Smokes x4",detail:"CT, Redroom, Temple, Donuit"},{name:"Molotov x1",detail:"Default A"},{name:"Flash x3",detail:"main, donut, site"}]
-      },
-      { id: "Default", name: "Default", type: "default", badge: "badge-default", inspired: "", desc: "Spill en langsom default som prioriterer cave og mid-kontroll. Les CT-setup før du committer.",
-        steps: [
-          { text: "2 players går back B — tar ramp og cave kontroll", players: ["Ole","Mekkis"] },
-          { text: "2 players går elbow til mid uten å over-committe", players: ["Birk","propit3"] },
-          { text: "1 player lurker A main for info", players: ["S15T3M"] },
-          { text: "Samle CT-rotasjoner mid-round", players: ["S15T3M"] },
-          { text: "Commit til site hvor det er færrest", players: ["S15T3M","Ole","Birk", "propit3", "Mekkis"] }
-        ],
-        utility: [{name:"Smoke x2",detail:"Redroom, Donut"},{name:"Flash x1",detail:"Cave peek"},{name:"Molotov x1",detail:"Reaktivt"}]
-      },
-      { id: "b-rush-anc", name: "5-man B cave/ramp rush rush", type: "rush", badge: "badge-rush", inspired: "", desc: "Speed-run til B gjennom cave/ramp med alle 5, én smoke på Long og en flash for å blende B-anchor.",
-        steps: [
-          { text: "Alle 5 beiner cave/ramp ved start", players: ["Birk","Mekkis","propit3","Ole","S15T3M"] },
-          { text: "1 player smoker Long, en annen flasher B entrance", players: ["Ole","S15T3M"] },
-          { text: "Entry frag ut cave/ramp samtidig", players: ["Birk", "propit3", "Mekkis", "S15T3M"] },
-          { text: "Flood site — plant default eller cave-side", players: ["propit3","Mekkis"] },
-          { text: "2 players holder cave bak, 1 mid entrance flank-watch", players: [""] }
-        ],
-        utility: [{name:"Smoke x1",detail:"Long"},{name:"Flash x2",detail:"B entrance"}]
-      },
-      { id: "a-fake-b-anc", name: "A fake into B mid", type: "fake", badge: "badge-fake", inspired: "", desc: "Tving 2 players til å kaste all A-utility høyt, redirect dem og 2 lurks gjennom mid inn i B. 1 player sitter ramp stille fra start og venter",
-        steps: [
-          { text: "2 players committer main-push — smoke, flash, molotov", players: ["Ole","propit3"] },
-          { text: "Lag støy og press i 10-12 sekunder", players: ["Ole","propit3"] },
-          { text: "2 lurks kontester stille mid under faken", players: ["Birk","S15T3M"] },
-          { text: "Når CT rotasjon er bekreftet — call rotate til B", players: ["S15T3M"] },
-          { text: "Alle 5 konverter på B fra cave + mid simultant", players: ["Birk","Mekkis","propit3","Ole","S15T3M"] }
-        ],
-        utility: [{name:"Smokes x3",detail:"CT fake + B CT, elbow"},{name:"Flash x2",detail:"Ruins fake, B entry"},{name:"Molotov x1",detail:"Ruins fake"}]
-      },
-      { id: "pistol-anc", name: "Pistol: Mid, donut to A", type: "pistol", badge: "badge-pistol", inspired: "", desc: "4 Spillere pusher elbow til donut og A, og 1 går A main",
-        steps: [
-          { text: "4 players rusher donut — send 1 til main for A anchor", players: ["Birk","propit3","Ole","S15T3M","Mekkis"] },
-          { text: "Kaster insta smoke Redroom, og flasher mid", players: ["S15T3M"] },
-          { text: "Flood site og plant short-side/default", players: [""] },
-          { text: "Spiller afterplant fra Donut og A main", players: [""] }
-        ],
-        utility: [{name:"Smoke x1",detail:"Redroom"},{name:"Flashes x2",detail:"mid, site entry"}]
-      }
-    ]
-  },
-  anubis: {
-    name: "Anubis",
-    meta: "Most T-sided map (57% T win rate) — mid bridge og water routes er dominante",
-    strats: [
-      { id: "mid-a-anubis", name: "Mid bridge to A execute", type: "execute", badge: "badge-execute", inspired: "", desc: "Ta kontroll over mid-bridge, for å deretter splitte Camera og A main",
-        steps: [
-          { text: "3 players tar mid-brigde, smoke window, molly cubby mid", players: ["S15T3M","Ole","propit3"] },
-          { text: "2 players tar A water og holder A main og B connector push", players: ["Birk","Mekkis"] },
-          { text: "Pauser mid-round for å catche evt pushes", players: ["S15T3M", "Ole","propit3", "Birk", "Mekkis"] },
-          { text: "Redirect mid-players inn i Camera og ta A", players: ["S15T3M","Ole", "propit3"] },
-          { text: "Resterende samler seg mot A main og tar A main samtidig som Camera take", players: ["Birk","Mekkis"] },
-          { text: "Plant mot A main — hold camera og heaven", players: [""] }
-        ],
-        utility: [{name:"Smokes x4",detail:"Window, Connector, Temple, Heaven"},{name:"Flash x3",detail:"Bridge, A entry, site"},{name:"Molotov x1",detail:"Mid-cubby"}]
-      },
-      { id: "water-b-anubis", name: "Water + B Main split", type: "execute", badge: "badge-execute", inspired: "", desc: "Push B via water og B main simultant, smoke og flashe inn på site",
-        steps: [
-          { text: "2 players tar water — beveger seg mot connector", players: ["Ole","propit3"] },
-          { text: "3 players går B main, 1 player smoker CT og flasher inn", players: ["S15T3M", "Birk", "Mekkis"] },
-          { text: "Flash over siten når players entrer fra water", players: ["S15T3M"] },
-          { text: "Push samtidig fra B main og Connector", players: ["Ole", "propit3", "S15T3M", "Birk", "Mekkis"] },
-          { text: "Plant default B — hold temple exit, connector og CT", players: [""] },
-        ],
-        utility: [{name:"Smokes x3",detail:"Connector, CT B"},{name:"Flash x3",detail:"Water entry, site"},{name:"Molotov x1",detail:"B main corner"}]
-      },
-      { id: "anubis-default", name: "Aggressive mid default", type: "default", badge: "badge-default", inspired: "General pro meta — Anubis favoriserer aggressive T defaults", desc: "Bruk tidlig mid-press til å samle info, split CTs mellom mid og site defense.",
-        steps: [
-          { text: "2 players contester Mid-Bridge", players: ["S15T3M","propit3"] },
-          { text: "Gjenværende players kjører balansert A/B presence", players: ["Birk","Ole","Mekkis"] },
-          { text: "Convert mid-kontroll til den svakeste siten", players: ["S15T3M"] },
-          { text: "Default uten utility — pure posisjonelle reads", players: [""] }
-        ],
-        utility: [{name:"Smoke x1",detail:"Heaven or connector"},{name:"Flash x1",detail:"Bridge"},{name:"Molotov x1",detail:"Mid-Cubby"}]
-      },
-      { id: "a-rush-anubis", name: "5-man A main rush", type: "rush", badge: "badge-rush", inspired: "", desc: "Basically pistol round med våpen",
-        steps: [
-          { text: "Alle 5 går A — bruk carpet istedenfor stairs (kan ikke høres)", players: ["Birk","Mekkis","propit3","Ole","S15T3M"] },
-          { text: "4 players entry, 1 smoker Bigbox, molly Camera og flasher inn", players: ["S15T3M"] },
-          { text: "Ta kontroll på siten før CT rekker å rotere inn", players: ["Birk","Mekkis","propit3","Ole"] },
-          { text: "Plant mot main med beskyttelse fra A main", players: [""] },
-          { text: "Smoke player forsvarer A main flank", players: ["S15T3M"] },
-          { text: "Hold ruins og connector angles post-plant", players: [""] }
-        ],
-        utility: [{name:"Smoke x1",detail:"Bigbox"},{name:"Flash x2",detail:"Into A site"},{name:"Molotov x1",detail:"Camera"}]
-      },
-      { id: "anubis-fake", name: "Johannes SPESIAL", type: "rush", badge: "badge-fake", inspired: "", desc: "4 players sitter inne i B main smoke som CT kaster. Kaster de ikke smoke caller vi av.",
-        steps: [
-          { text: "4 players går mot B main og setter seg inn i smoken", players: ["Ole","propit3","Mekkis", "Birk"] },
-          { text: "1 player flasher 2x", players: ["S15T3M"] },
-          { text: "1 sjekker Jail, 1 sjekker Pillar/Connector, 2 sjekker CT, Backsite", players: ["Ole","propit3","Mekkis", "Birk"] },
-          { text: "Kast smokes når B site er tatt og spill afterplant", players: [""] },
-        ],
-        utility: [{name:"Smokes x2",detail:"Palace fake, A camera"},{name:"Flash x2",detail:"Water fake, A entry"},{name:"Molotov x1",detail:"Water fake"}]
-      },
-      { id: "pistol-anubis", name: "Pistol: 5-man A Contact", type: "pistol", badge: "badge-pistol", inspired: "", desc: "4-man A contact via carpet. Flasher inn A main, Smoker Big box og molly Camera.",
-        steps: [
-          { text: "Buy: 3x kevlar, 1x smoke + 2x flashes, 1x molly ", players: ["Ole","S15T3M"] },
-          { text: "4 players beveger seg carpet og venter på A Main flash", players: ["Mekkis","propit3","Birk","S15T3M"] },
-          { text: "1 player lurker stairs for window og connector push", players: ["Ole"] },
-          { text: "3 players tar A site sammen, 1 player smoker Big box, molly Camera", players: ["Mekkis","propit3","Birk", "S15T3M"] },
-          { text: "Plant mot A main", players: [""] },
-          { text: "Hold heaven/camera/main angles — ikke jag kills", players: [""] }
-        ],
-        utility: [{name:"Smoke x1",detail:"Bigbox"},{name:"Flash x2",detail:"A site entry"}, {name:"Molotov x1",detail:"Camera"}]
-      }
-    ]
-  },
-  dust2: {
-    name: "Dust 2",
-    meta: "Balanced (51% CT win rate) — long og mid-kontroll definerer T-side tilnærmingen",
-    strats: [
-      { id: "b-rush-d2", name: "5-man B tunnels rush", type: "rush", badge: "badge-rush", inspired: "Classic pro meta — fortsatt brukt av Falcons og FURIA", desc: "Har vi gode spawns så rusher vi B alle mann",
-        steps: [
-          { text: "Alle 5 beiner B tunnels — ingen stop", players: ["Birk","Mekkis","propit3","Ole","S15T3M"] },
-          { text: "1 player smoker Door, og Window", players: ["S15T3M", "propit3"] },
-          { text: "Flash inn i lower tunnels, flash over B site", players: ["Birk", "Mekkis", "propit3", "Ole"] },
-          { text: "Flood site og plant default bak bokser", players: [""] },
-          { text: "Hold window og CT post-plant — ikke jag", players: [""] }
-        ],
-        utility: [{name:"Smokes x2",detail:"Door, Window"},{name:"Flash x3",detail:"Tunnels, site x2"}]
-      },
-      { id: "long-a-d2", name: "Long - Short Split", type: "split", badge: "badge-execute", inspired: "", desc: "Vinn long-kontroll og execute A med smokes på CT, short og catwalk.",
-        steps: [
-          { text: "2 players fighter for long — blir assistert med flash og evt smoke long corner", players: ["propit3","Ole", "Mekkis", "Birk"] },
-          { text: "2 players tar mid/short kontroll, smoke Xbox", players: ["propit3","Ole", "Mekkis", "Birk"] },
-          { text: "1 player lurker B tunnels og møter mid players", players: ["S15T3M"] },
-          { text: "Smoker walkway short og walker bak smoken.", players: ["propit3", "Ole", "Mekkis","Birk", "S15T3M"] },
-          { text: "Long players går long samtidig som short players pusher", players: [""] },
-          { text: "Plant short og hold afterplant", players: [""] }
-        ],
-        utility: [{name:"Smokes x3",detail:"Xbox, 2x short"},{name:"Flash x3",detail:"Long, A entry, catwalk"},{name:"Molotov x1",detail:"Short-corner"}]
-      },
-      { id: "mid-b-d2", name: "Mid to B split", type: "split", badge: "badge-split", inspired: "", desc: "Ta mid via Xbox, smoke CT cross, og splitt fra Mid og B tunnels",
-        steps: [
-          { text: "Smoke xbox — 3 players tar mid-kontroll", players: ["S15T3M","Birk","Mekkis"] },
-          { text: "2 players sitter B tunnels og holder", players: ["Ole","propit3"] },
-          { text: "Smoker CT cross, flasher doors og pusher mid til B", players: ["S15T3M", "Birk", "Mekkis"] },
-          { text: "B tunnels player pusher samtidig som mid players kommer doors", players: ["Ole", "propit3"] },
-          { text: "Plant default — hold CT, Window og Tunnels", players: [""] }
-        ],
-        utility: [{name:"Smokes x3",detail:"Xbox, CT Cross, site"},{name:"Flash x3",detail:"Mid, short, tunnels"}]
-      },
-      { id: "d2-default", name: "Info default", type: "default", badge: "badge-default", inspired: "", desc: "Spre laget for å samle informasjon — 2 long, 1 mid, 2 B tunnels. Spill passivt og gjør en late-round call.",
-        steps: [
-          { text: "2 players prober long — ikke peek med mindre det er gunstig", players: [""] },
-          { text: "1 player tar mid (xbox-area) for informasjon", players: [""] },
-          { text: "2 players holder B tunnels passivt", players: [""] },
-          { text: "Samle informasjon fra alle 3 sonene", players: ["S15T3M"] },
-          { text: "Late-round: call execute med numbers-fordel på svakeste side", players: ["S15T3M","propit3"] }
-        ],
-        utility: [{name:"Smoke x1",detail:"Xbox"},{name:"Flash x1",detail:"Long pop"}]
-      },
-      { id: "d2-fake", name: "Long A fake to B", type: "fake", badge: "badge-fake", inspired: "", desc: "Commit til long med 2 players og full utility for å dra CT-rotasjon, hard redirect til B tunnels for en 3v1 eller 3v2.",
-        steps: [
-          { text: "2 players fighter long aggressivt — smoke, pop flash", players: [""] },
-          { text: "Støy og presence for å tvinge CT-rotasjon fra B", players: [""] },
-          { text: "3 players holder B tunnels stille", players: [""] },
-          { text: "Når CT roterer — call B execute: smoke B Doors, flash site", players: [""] },
-          { text: "Entry frag og plant fort — 2 long players roterer som backup", players: [""] }
-        ],
-        utility: [{name:"Smokes x2",detail:"Pit fake, CT B"},{name:"Flash x2",detail:"Long fake, B entry"},{name:"Molotov x1",detail:"Long fake"}]
-      },
-      { id: "pistol-d2", name: "Pistol: B tunnels rush", type: "pistol", badge: "badge-pistol", inspired: "Standard pro meta — B rush er den dominante Dust 2 T pistolen", desc: "Rush B med 5 players på pistol — smoke CT og cross, flash inn på siten.",
-        steps: [
-          { text: "Buy: 3x kevlar, 2x smoke + 3x flash", players: ["Ole","S15T3M"] },
-          { text: "Alle 5 rusher B tunnels ved rundestart", players: ["Birk","Mekkis","propit3","Ole","S15T3M"] },
-          { text: "Smoke Doors og Window tidlig", players: ["S15T3M"] },
-          { text: "Flash upper tunnels og deretter flash over inn på siten", players: ["Ole"] },
-          { text: "Plant default, hold CT og window med pistoler", players: [""] }
-        ],
-        utility: [{name:"Smoke x2",detail:"Doors, Window"},{name:"Flashes x3",detail:"Upper tunnels, site x2"}]
-      }
-    ]
-  }
-};
-
-const mapOrder = ['mirage','inferno','nuke','overpass','ancient','anubis','dust2'];
-const typeLabel = { execute:'Execute', split:'Split', default:'Default', rush:'Rush', pistol:'Pistol', fake:'Fake' };
-
-function renderAll() {
-  const nav = document.getElementById('mapNav');
-  nav.innerHTML = mapOrder.map(m => `<a href="#map-${m}">${maps[m].name}</a>`).join('');
-
-  const content = document.getElementById('content');
-  content.innerHTML = mapOrder.map(mapId => {
-    const map = maps[mapId];
-    const cards = map.strats.map(s => `
-      <div class="strat-card">
-        <div class="card-top">
-          <div class="card-top-info">
-            <div class="strat-name">${s.name}</div>
-            <div class="strat-inspired">Pro ref: ${s.inspired}</div>
-          </div>
-          <span class="badge ${s.badge}">${typeLabel[s.type]}</span>
-        </div>
-        <p class="desc">${s.desc}</p>
-        <hr class="card-divider">
-        <div>
-          <div class="label">Execution steps</div>
-          <ul class="steps">
-            ${s.steps.map((step, i) => `
-              <li>
-                <span class="step-num">${i+1}</span>
-                <div class="step-content">
-                  <div class="step-players">${p(step.players)}</div>
-                  <span>${step.text}</span>
-                </div>
-              </li>
-            `).join('')}
-          </ul>
-        </div>
-        <div>
-          <div class="label">Utility required</div>
-          <div class="util-row">
-            ${s.utility.map(u => `<div class="util-item"><div class="util-name">${u.name}</div><div class="util-detail">${u.detail}</div></div>`).join('')}
-          </div>
-        </div>
-      </div>
-    `).join('');
-
-    return `
-      <section class="map-section" id="map-${mapId}">
-        <div class="map-header">
-          <h2>${map.name}</h2>
-          <div class="map-meta">${map.meta}</div>
-        </div>
-        <div class="strat-grid">${cards}</div>
-      </section>
-    `;
-  }).join('');
-}
-
-renderAll();
-</script>
-</body>
-</html>
+  <nav class="topbar-nav">
+    <div class="topbar-tab active" onclick="switchPage('stratbook')" data-page="stratbook">
+      <span class="tab-icon">⬡</span> Stratbook
+    </div>
+    <div class="topbar-tab" onclick="switchPage('schedule')" data-page="schedule">
+      <span class="tab-icon">◈</span> Kampplan
