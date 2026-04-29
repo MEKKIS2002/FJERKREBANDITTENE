@@ -946,6 +946,9 @@ body::before {
 
         <!-- Match list -->
         <div>
+          <div class="section-divider">Kartoversikt</div>
+          <div id="map-stats-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:24px;"></div>
+
           <div class="section-divider">Spillte kamper</div>
           <div class="match-list" id="played-list"></div>
 
@@ -999,434 +1002,174 @@ body::before {
 </div><!-- /app-wrapper -->
 
 <script>
-/* ═════════════════════════════════════════
-   KONFIGURASJON — OPPDATER WORKER URL
-   Sett inn din Cloudflare Worker URL her.
-   Se gamer-proxy-worker.js for deploy-instrukser.
-   ═════════════════════════════════════════ */
-const WORKER_URL = 'https://fjerkrebandittene.marcus-aas-mekiassen.workers.dev';
+/* ═══════════════════════════════════════════════════════════
+   KAMPDATA — oppdater dette manuelt etter hvert screenshot
+   ═══════════════════════════════════════════════════════════ */
 
-/* Gamer.no — én side har alt: tabell, kamper, resultater */
-const TEAM_URL = 'https://www.gamer.no/turneringer/komplettligaen-counter-strike-varen-2026/13835/lag/211067';
-const NEXT_MATCH_URL = 'https://www.gamer.no/turneringer/komplettligaen-counter-strike-varen-2026/13835/kamp/256224';
+const KAMPER = {
+  spilt: [
+    {
+      opponent:  'IL Hei E-sport MainBoys',
+      date:      '2026-04-23',
+      time:      '20:00',
+      result:    'win',
+      scoreUs:   2,
+      scoreThem: 0,
+      maps: [
+        { name: 'Nuke',   result: 'win', scoreUs: 16, scoreThem: 6  },
+        { name: 'Anubis', result: 'win', scoreUs: 16, scoreThem: 11 },
+      ],
+      matchUrl: null,
+    },
+    {
+      opponent:  'Gatemix E-Sport (CS2)',
+      date:      '2026-04-28',
+      time:      '20:00',
+      result:    'win',
+      scoreUs:   2,
+      scoreThem: 0,
+      maps: [
+        { name: 'Overpass', result: 'win', scoreUs: 16, scoreThem: 9  },
+        { name: 'Ancient',  result: 'win', scoreUs: 16, scoreThem: 11 },
+      ],
+      matchUrl: null,
+    },
+    // Legg til her etter neste kamp:
+    // {
+    //   opponent: 'Klompeklattane', date: '2026-04-30', time: '20:00',
+    //   result: 'win', scoreUs: 2, scoreThem: 0,
+    //   maps: [
+    //     { name: 'Mirage', result: 'win', scoreUs: 16, scoreThem: 9 },
+    //     { name: 'Dust 2', result: 'win', scoreUs: 16, scoreThem: 14 },
+    //   ],
+    //   matchUrl: 'https://www.gamer.no/turneringer/.../kamp/256224',
+    // },
+  ],
 
-const OUR_TEAM = 'Fjærkrebandittene';
-const OUR_TEAM_LC = 'fjærkrebandittene';
+  kommende: [
+    {
+      opponent: 'Klompeklattane',
+      date:     '2026-04-30',
+      time:     '20:00',
+      format:   'Bo3',
+      isNext:   true,
+      matchUrl: 'https://www.gamer.no/turneringer/komplettligaen-counter-strike-varen-2026/13835/kamp/256224',
+    },
+    {
+      opponent: 'Ocean Cafe & Bar Gaming',
+      date:     '2026-05-05',
+      time:     '19:00',
+      format:   'Bo3',
+      isNext:   false,
+      matchUrl: null,
+    },
+    {
+      opponent: 'GAMINGGAMERS',
+      date:     '2026-05-07',
+      time:     '19:00',
+      format:   'Bo3',
+      isNext:   false,
+      matchUrl: null,
+    },
+    {
+      opponent: '99INONE',
+      date:     '2026-05-14',
+      time:     '19:00',
+      format:   'Bo3',
+      isNext:   false,
+      matchUrl: null,
+    },
+    {
+      opponent: 'Back Breakers (CS2)',
+      date:     '2026-05-21',
+      time:     '19:00',
+      format:   'Bo3',
+      isNext:   false,
+      matchUrl: null,
+    },
+    {
+      opponent: 'VorteX (CS2)',
+      date:     '2026-05-28',
+      time:     '19:00',
+      format:   'Bo3',
+      isNext:   false,
+      matchUrl: null,
+    },
+  ],
+};
 
-/* ── Hjelp: hent JSON via Worker ── */
-async function proxyFetch(url) {
-  const res = await fetch(`${WORKER_URL}?url=${encodeURIComponent(url)}`);
-  if (!res.ok) throw new Error(`HTTP ${res.status} fra Worker`);
-  const json = await res.json();
-  if (json.error) throw new Error(json.error);
-  return json; // { tableRows, kampLinks, pageText }
-}
+/* ═══════════════════════════════════════════════════════════
+   KARTOVERSIKT — oppdater etter hvert screenshot
+   ═══════════════════════════════════════════════════════════ */
+const KARTOVERSIKT = [
+  { name:'Nuke',     pct:100, w:1, l:0, total:1, diff:'+10', valgt:1, vraket:0 },
+  { name:'Overpass', pct:100, w:1, l:0, total:1, diff:'+7',  valgt:1, vraket:0 },
+  { name:'Ancient',  pct:100, w:1, l:0, total:1, diff:'+5',  valgt:0, vraket:0 },
+  { name:'Anubis',   pct:100, w:1, l:0, total:1, diff:'+5',  valgt:0, vraket:0 },
+  { name:'Dust II',  pct:0,   w:0, l:0, total:0, diff:'0',   valgt:0, vraket:2 },
+  { name:'Inferno',  pct:0,   w:0, l:0, total:0, diff:'0',   valgt:0, vraket:2 },
+  { name:'Mirage',   pct:null, w:0, l:0, total:0, diff:'0',  valgt:0, vraket:0 },
+];
 
+/* ═══════════════════════════════════════════════════════════
+   TABELL — 5. divisjon avd. A — oppdater etter hver kampdag
+   ═══════════════════════════════════════════════════════════ */
 
+const TABELL = [
+  { pos:1,  name:'Back Breakers (CS2)',      s:2, w:2, u:0, l:0, diff:'+4', p:6, us:false },
+  { pos:1,  name:'Fjærkrebandittene (CS2)',  s:2, w:2, u:0, l:0, diff:'+4', p:6, us:true  },
+  { pos:3,  name:'GAMINGGAMERS',             s:2, w:2, u:0, l:0, diff:'+2', p:6, us:false },
+  { pos:4,  name:'Ocean Cafe & Bar Gaming',  s:2, w:1, u:0, l:1, diff:'+1', p:3, us:false },
+  { pos:5,  name:'Klompeklattane',           s:2, w:1, u:0, l:1, diff:'0',  p:3, us:false },
+  { pos:6,  name:'VorteX (CS2)',             s:1, w:0, u:0, l:1, diff:'-1', p:0, us:false },
+  { pos:7,  name:'IL Hei E-sport MainBoys',  s:1, w:0, u:0, l:1, diff:'-2', p:0, us:false },
+  { pos:8,  name:'99INONE',                  s:2, w:0, u:0, l:2, diff:'-4', p:0, us:false },
+  { pos:8,  name:'Gatemix E-Sport (CS2)',    s:2, w:0, u:0, l:2, diff:'-4', p:0, us:false },
+  { pos:10, name:'Wen Hua 28a [trukket]',    s:0, w:0, u:0, l:0, diff:'0',  p:0, us:false, withdrawn:true },
+];
 
-
-/* ═══════════════════════════════════════════
-   PARSER: TABELLPOSISJONER
-   Jobber på tableRows fra Worker.
-   Finner divisjonsavsnittet som inneholder laget vårt.
-   ═══════════════════════════════════════════ */
-function parseStandings({ tableRows }) {
-  if (!tableRows || tableRows.length === 0) return null;
-
-  // Finn rad som inneholder lagets navn
-  const ourIdx = tableRows.findIndex(row =>
-    row.some(c => c.toLowerCase().includes(OUR_TEAM_LC))
-  );
-  if (ourIdx === -1) return null;
-
-  // Gå bakover for å finne start på tabellseksjonen (stopp ved ikke-tabellrader)
-  let start = ourIdx;
-  while (start > 0) {
-    const prev = tableRows[start - 1];
-    const nums = prev.filter(c => /^[\d+\-]+$/.test(c) && c !== '').length;
-    if (nums < 2 && !prev.some(c => /^[#\d]$/.test(c) || ['lag','s','v','u','t','p','b'].includes(c.toLowerCase()))) break;
-    start--;
-  }
-
-  const results = [];
-  for (let i = start; i < tableRows.length; i++) {
-    const row = tableRows[i];
-    const cells = row.filter(c => c.trim() !== '');
-    if (cells.length < 3) continue;
-
-    // Finn lagnavn (lengst ikke-numerisk celle)
-    const nameCells = cells.filter(c =>
-      isNaN(c.replace(/[+\-]/, '')) && c.length > 2 &&
-      !['#','lag','s','v','u','t','p','b','+/-'].includes(c.toLowerCase())
-    );
-    if (nameCells.length === 0) continue;
-    const name = nameCells[0];
-
-    // Finn alle numeriske verdier
-    const nums = cells
-      .filter(c => /^[\d+\-]+$/.test(c))
-      .map(c => parseInt(c) || 0);
-    if (nums.length < 3) continue;
-
-    const pos = parseInt(cells[0]) || (results.length + 1);
-    const w   = nums[1] !== undefined ? nums[1] : nums[0];
-    const l   = nums[3] !== undefined ? nums[3] : nums[nums.length - 2];
-    const pts = nums[nums.length - 1];
-
-    const withdrawn = name.toLowerCase().includes('trukket');
-    results.push({ pos, name, w, l, pts, us: name.toLowerCase().includes(OUR_TEAM_LC), withdrawn });
-
-    // Stopp hvis vi treffer en rad som ser ut som ny seksjon-header
-    if (results.length > 2 && cells.length > 1 && isNaN(cells[0]) &&
-        !nameCells[0].toLowerCase().includes(OUR_TEAM_LC) &&
-        nums.length < 2) break;
-  }
-
-  return results.length > 0 ? results : null;
-}
-
-/* ═══════════════════════════════════════════
-   PARSER: SPILLTE KAMPER
-   Jobber på pageText. Finner linjer med laget vårt
-   + naboscorepattern som indikerer et fullspilt resultat.
-   ═══════════════════════════════════════════ */
-function parseResults({ pageText, kampLinks }) {
-  if (!pageText) return [];
-  const lines  = pageText.split('\n').map(l => l.trim()).filter(Boolean);
-  const seen   = new Set();
-  const results = [];
-
-  for (let i = 0; i < lines.length; i++) {
-    if (!lines[i].toLowerCase().includes(OUR_TEAM_LC)) continue;
-
-    // Vindu på ±8 linjer rundt vårt lagnavn
-    const win = lines.slice(Math.max(0, i - 8), Math.min(lines.length, i + 9));
-    const ctx = win.join(' ');
-
-    // Resultat-score: ett av tallene 1 eller 2 (Bo2), ingen 0-0
-    const scoreRe = /\b([012])\s*[–\-:]\s*([012])\b/g;
-    const scoreMatch = scoreRe.exec(ctx);
-    if (!scoreMatch) continue;
-
-    const scoreUs   = parseInt(scoreMatch[1]);
-    const scoreThem = parseInt(scoreMatch[2]);
-    if (scoreUs === 0 && scoreThem === 0) continue;
-
-    // Finn motstander i vinduet
-    let opponent = null;
-    for (const line of win) {
-      if (line.toLowerCase().includes(OUR_TEAM_LC)) continue;
-      if (line.length < 3 || line.length > 80) continue;
-      if (/^\d/.test(line)) continue;      // Starts with number = date/score
-      if (/^\W+$/.test(line)) continue;    // Only symbols
-      if (['bo2','bo3','gruppe','runde','kamp','seriekamp'].some(k => line.toLowerCase().includes(k))) continue;
-      opponent = line;
-      break;
-    }
-    if (!opponent) continue;
-
-    const key = opponent.toLowerCase() + scoreUs + scoreThem;
-    if (seen.has(key)) continue;
-    seen.add(key);
-
-    const result = scoreUs > scoreThem ? 'win' : scoreUs < scoreThem ? 'loss' : 'draw';
-    const matchUrl = kampLinks && kampLinks[results.length] || null;
-    results.push({ opponent, scoreUs, scoreThem, result, maps: [], matchUrl, date: null, time: '20:00' });
-  }
-
-  return results;
-}
-
-/* ═══════════════════════════════════════════
-   PARSER: KOMMENDE KAMPER
-   Finner tilfeller av lagets navn UTEN score i nærheten.
-   ═══════════════════════════════════════════ */
-function parseUpcoming({ pageText, kampLinks }) {
-  if (!pageText) return [];
-  const lines = pageText.split('\n').map(l => l.trim()).filter(Boolean);
-  const seen  = new Set();
-  const upcoming = [];
-
-  for (let i = 0; i < lines.length; i++) {
-    if (!lines[i].toLowerCase().includes(OUR_TEAM_LC)) continue;
-
-    const win = lines.slice(Math.max(0, i - 8), Math.min(lines.length, i + 9));
-    const ctx = win.join(' ');
-
-    // Skip hvis det finnes en resultat-score
-    if (/\b[12]\s*[–\-:]\s*[012]\b/.test(ctx)) continue;
-
-    // Finn motstander
-    let opponent = null;
-    for (const line of win) {
-      if (line.toLowerCase().includes(OUR_TEAM_LC)) continue;
-      if (line.length < 3 || line.length > 80) continue;
-      if (/^\d/.test(line)) continue;
-      if (/^\W+$/.test(line)) continue;
-      if (['bo2','bo3','gruppe','runde','kamp','seriekamp','vs'].some(k => line.toLowerCase() === k)) continue;
-      opponent = line;
-      break;
-    }
-    if (!opponent) continue;
-
-    const key = opponent.toLowerCase();
-    if (seen.has(key)) continue;
-    seen.add(key);
-
-    // Finn dato i nærheten: "30. april", "torsdag 30."
-    let date = null;
-    const dateRe = /(\d{1,2})[.\s]+(januar|februar|mars|april|mai|juni|juli|august|september|oktober|november|desember)/i;
-    const dateMatch = ctx.match(dateRe);
-    if (dateMatch) date = dateMatch[0];
-
-    // Finn tidspunkt
-    const timeRe = /\b(\d{2}):(\d{2})\b/;
-    const timeMatch = ctx.match(timeRe);
-    const time = timeMatch ? timeMatch[0] : '20:00';
-
-    // Kamplenke — bruk kampLinks i rekkefølge, filtrer ut allerede brukte
-    const matchUrl = kampLinks && kampLinks[upcoming.length] || null;
-
-    upcoming.push({ opponent, date, time, matchUrl, result: 'upcoming', maps: [] });
-  }
-
-  return upcoming;
-}
-
-/* ═══════════════ LIVE DATA LOAD ═══════════════ */
+/* ── Hjelpefunksjoner ── */
 let liveData = { results: [], upcoming: [], standings: null };
+let _countdownInterval = null;
 
 function setStatus(msg, color) {
   const el = document.getElementById('fetch-status');
   if (el) { el.textContent = msg; el.style.color = color || 'var(--text3)'; }
 }
 
-/* ══════════════════════════════════════════
-   LIVE DATA — henter alt fra én side
-   ══════════════════════════════════════════ */
-
-/* Ord som IKKE er lagnavn (nav-elementer, norske ord, etc.) */
-const NOISE_WORDS = new Set([
-  'anmeldelser','resultater','kamper','spillere','tabell','plasseringer',
-  'turneringer','nyheter','forum','lag','kamp','logg','inn','registrer',
-  'hjem','sport','esport','cs2','counter-strike','csgo','bo2','bo3',
-  'serie','runde','gruppe','vinnere','finalespill','kvalifisering',
-  'vs','mot','poeng','spilt','vunnet','tapt','uavgjort','differanse',
-  'søk','meny','navigasjon','lenker','kontakt','om','vilkår',
-]);
-
-function isValidTeamName(str) {
-  if (!str || str.length < 3 || str.length > 60) return false;
-  if (/^\d/.test(str)) return false;           // starter med tall
-  if (/^\W+$/.test(str)) return false;          // bare symboler
-  if (/^[\d\s\-:+]+$/.test(str)) return false; // bare tall/score
-  if (NOISE_WORDS.has(str.toLowerCase())) return false;
-  if (str.toLowerCase() === OUR_TEAM_LC) return false;
-  // Må inneholde minst én bokstav
-  if (!/[a-zæøåA-ZÆØÅ]/.test(str)) return false;
-  return true;
+function loadLiveData() {
+  liveData.results   = KAMPER.spilt;
+  liveData.upcoming  = KAMPER.kommende;
+  liveData.standings = TABELL;
+  setStatus('Data lastet ✓', 'var(--green)');
+  renderKamper();
 }
 
-async function loadLiveData() {
-  setStatus('Henter data...', 'var(--orange)');
-  const btn = document.getElementById('refresh-btn');
-  if (btn) btn.disabled = true;
-
-  try {
-    const data = await proxyFetch(TEAM_URL);
-    window._dbg = data;
-
-    const lines = (data.pageText || '').split('\n').map(l => l.trim()).filter(Boolean);
-
-    // ── Parse spillte kamper ──
-    const results = [];
-    const seenResults = new Set();
-    for (let i = 0; i < lines.length; i++) {
-      if (!lines[i].toLowerCase().includes(OUR_TEAM_LC)) continue;
-      const win = lines.slice(Math.max(0, i-8), Math.min(lines.length, i+9));
-      const ctx = win.join(' ');
-      // Resultat-score: 2-0, 2-1, 0-2, 1-2
-      const sm = ctx.match(/\b([012])\s*[–\-]\s*([012])\b/);
-      if (!sm) continue;
-      const su = parseInt(sm[1]), st = parseInt(sm[2]);
-      if (su === 0 && st === 0) continue;
-      let opponent = null;
-      for (const line of win) {
-        if (isValidTeamName(line)) { opponent = line; break; }
-      }
-      if (!opponent) continue;
-      const key = opponent.toLowerCase() + su + st;
-      if (seenResults.has(key)) continue;
-      seenResults.add(key);
-      const result = su > st ? 'win' : su < st ? 'loss' : 'draw';
-      // Finn kamp-URL fra kampLinks
-      const matchUrl = (data.kampLinks || []).find(l => !results.some(r => r.matchUrl === l)) || null;
-      results.push({ opponent, scoreUs: su, scoreThem: st, result, maps: [], matchUrl });
-    }
-
-    // ── Parse kommende kamper ──
-    const upcoming = [];
-    const seenUp = new Set();
-    for (let i = 0; i < lines.length; i++) {
-      if (!lines[i].toLowerCase().includes(OUR_TEAM_LC)) continue;
-      const win = lines.slice(Math.max(0, i-8), Math.min(lines.length, i+9));
-      const ctx = win.join(' ');
-      if (/\b[12]\s*[–\-]\s*[012]\b/.test(ctx)) continue; // har score = resultat
-      let opponent = null;
-      for (const line of win) {
-        if (isValidTeamName(line)) { opponent = line; break; }
-      }
-      if (!opponent) continue;
-      if (seenUp.has(opponent.toLowerCase())) continue;
-      if (seenResults.has(opponent.toLowerCase() + '00') || results.some(r => r.opponent.toLowerCase() === opponent.toLowerCase())) continue;
-      seenUp.add(opponent.toLowerCase());
-      // Finn dato
-      const dateMatch = ctx.match(/(\d{1,2})[.\s]+(januar|februar|mars|april|mai|juni|juli|august|september|oktober|november|desember)/i);
-      const timeMatch = ctx.match(/\b(\d{2}:\d{2})\b/);
-      // Finn kamp-URL
-      const matchUrl = (data.kampLinks || []).find(l => !upcoming.some(u => u.matchUrl === l) && !results.some(r => r.matchUrl === l)) || NEXT_MATCH_URL;
-      upcoming.push({
-        opponent,
-        date: dateMatch ? dateMatch[0] : null,
-        time: timeMatch ? timeMatch[1] : '20:00',
-        matchUrl,
-        result: 'upcoming', maps: []
-      });
-    }
-
-    // ── Parse tabell ──
-    const standings = parseStandings(data);
-
-    liveData.results   = results;
-    liveData.upcoming  = upcoming;
-    liveData.standings = standings;
-
-    const now = new Date().toLocaleTimeString('no-NO', { hour: '2-digit', minute: '2-digit' });
-    setStatus(`Oppdatert ${now} · ${results.length} res, ${upcoming.length} kom, ${standings ? standings.length : 0} tab`, 'var(--green)');
-
-    if (!results.length && !upcoming.length && !standings) {
-      showDebugPanel(data);
-    } else if (!results.length && upcoming.length <= 1) {
-      showDebugPanel(data);
-    }
-
-    renderKamper();
-  } catch (err) {
-    console.error('Live data feil:', err);
-    setStatus('Feil: ' + err.message, 'var(--red)');
-    renderKamperFallback();
-  } finally {
-    if (btn) btn.disabled = false;
-  }
-}
-
-/* ─ Debug-panel ─ */
-function showDebugPanel(d) {
-  const existing = document.getElementById('debug-panel');
-  if (existing) existing.remove();
-
-  const lines = (d.pageText || '').split('\n').map(l => l.trim()).filter(Boolean);
-  const rows   = (d.tableRows || []).slice(0, 40);
-  const links  = (d.kampLinks || []);
-
-  const panel = document.createElement('div');
-  panel.id = 'debug-panel';
-  panel.style.cssText = 'background:#0e1117;border:1px solid #e05252;border-radius:4px;padding:16px;margin-top:16px;font-family:"Share Tech Mono",monospace;font-size:10px;color:#c8d4e8;';
-  panel.innerHTML = `
-    <div style="color:#e05252;font-weight:bold;margin-bottom:8px;">⚠ DEBUG — send screenshot av dette til utvikler</div>
-
-    <div style="color:#f0901a;margin-bottom:4px;">KAMPLENKER (${links.length} funnet)</div>
-    <pre style="background:#080a0d;padding:8px;border-radius:3px;overflow:auto;max-height:100px;white-space:pre-wrap;margin-bottom:12px;">${links.join('\n') || '(ingen)'}</pre>
-
-    <div style="color:#f0901a;margin-bottom:4px;">TABELLRADER (første 40)</div>
-    <pre style="background:#080a0d;padding:8px;border-radius:3px;overflow:auto;max-height:200px;white-space:pre-wrap;margin-bottom:12px;">${rows.map((r,i)=>`[${i}] ${JSON.stringify(r)}`).join('\n') || '(ingen)'}</pre>
-
-    <div style="color:#f0901a;margin-bottom:4px;">SIDETEKST (linje 1–120)</div>
-    <pre style="background:#080a0d;padding:8px;border-radius:3px;overflow:auto;max-height:300px;white-space:pre-wrap;">${lines.slice(0,120).map((l,i)=>`${String(i+1).padStart(3,' ')}: ${l}`).join('\n') || '(tom)'}</pre>
-  `;
-
-  const target = document.getElementById('upcoming-list') || document.getElementById('played-list');
-  if (target) target.after(panel);
-  else document.getElementById('main').appendChild(panel);
-}
-
-
-
-function renderKamperFallback() {
-  document.getElementById('played-list').innerHTML =
-    '<div style="font-family:\'Share Tech Mono\',monospace;font-size:11px;color:var(--text3);padding:20px;text-align:center;border:1px dashed var(--border);border-radius:4px;line-height:2;">Klarte ikke hente data fra gamer.no.<br>Sjekk at Worker er deployet og prøv igjen.</div>';
-  document.getElementById('upcoming-list').innerHTML = '';
-  _renderNextMatch({ opponent:'???', date:'2026-04-30', time:'20:00', matchUrl: NEXT_MATCH_URL });
-  renderStandingsFallback();
-}
-
-function renderStandingsFallback() {
-  // Vis tabellen fra screenshot - manuelt innskrevet
-  const standingsFromScreenshot = [
-    { pos:1, name:'Back Breakers (CS2)',          w:2, l:0, us:false },
-    { pos:1, name:'Fjærkrebandittene (CS2)',       w:2, l:0, us:true  },
-    { pos:3, name:'GAMINGGAMERS',                 w:2, l:0, us:false },
-    { pos:4, name:'Ocean Cafe & Bar Gaming',      w:1, l:1, us:false },
-    { pos:5, name:'Klompeklattane',               w:1, l:1, us:false },
-    { pos:6, name:'VorteX (CS2)',                 w:0, l:1, us:false },
-    { pos:7, name:'IL Hei E-sport MainBoys',      w:0, l:1, us:false },
-    { pos:8, name:'99INONE',                      w:0, l:2, us:false },
-    { pos:8, name:'Gatemix E-Sport (CS2)',        w:0, l:2, us:false },
-  ];
-  _renderStandings(standingsFromScreenshot);
-}
-
-
-
-/* ═════════════════════════════════════════
-   TABELLDATA — 5. divisjon avd. A
-   Komplettligaen CS2 Vår 2026
-   ═════════════════════════════════════════ */
-const standings = [
-  { pos: 1,  name: 'Back Breakers (CS2)',       s:2, w:2, u:0, l:0, diff:'+4', p:6,  us: false },
-  { pos: 1,  name: 'Fjærkrebandittene (CS2)',   s:2, w:2, u:0, l:0, diff:'+4', p:6,  us: true  },
-  { pos: 3,  name: 'GAMINGGAMERS',              s:2, w:2, u:0, l:0, diff:'+2', p:6,  us: false },
-  { pos: 4,  name: 'Ocean Cafe & Bar Gaming',   s:2, w:1, u:0, l:1, diff:'+1', p:3,  us: false },
-  { pos: 5,  name: 'Klompeklattane',            s:2, w:1, u:0, l:1, diff:'0',  p:3,  us: false },
-  { pos: 6,  name: 'VorteX (CS2)',              s:1, w:0, u:0, l:1, diff:'-1', p:0,  us: false },
-  { pos: 7,  name: 'IL Hei E-sport MainBoys',  s:1, w:0, u:0, l:1, diff:'-2', p:0,  us: false },
-  { pos: 8,  name: '99INONE',                   s:2, w:0, u:0, l:2, diff:'-4', p:0,  us: false },
-  { pos: 8,  name: 'Gatemix E-Sport (CS2)',     s:2, w:0, u:0, l:2, diff:'-4', p:0,  us: false },
-  { pos: 10, name: 'Wen Hua 28a [trukket]',     s:0, w:0, u:0, l:0, diff:'0',  p:0,  us: false, withdrawn: true },
-];
-
-/* ═════════════════════════════════════════
-   STRATBOOK DATA
-   ═════════════════════════════════════════ */
+/* ── Player tags ── */
 function ptag(names) {
   const map = { 'S15T3M':'s','Ole':'o','propit3':'p','Birk':'b','Mekkis':'m' };
-  return names.filter(n=>n&&map[n]).map(n => `<span class="ptag ${map[n]}">${n}</span>`).join('');
+  return names.filter(n=>n&&map[n]).map(n=>`<span class="ptag ${map[n]}">${n}</span>`).join('');
 }
 
+/* ══════════════════════════════════════════
+   STRATBOOK DATA
+   ══════════════════════════════════════════ */
 const maps = {
-  mirage: {
-    name:"Mirage", meta:"CT-sided (54% CT win rate) — mid control er ryggraden",
-    strats:[
-      {id:"mid-split",name:"Mid-to-B Split",type:"split",badge:"badge-split",inspired:"",desc:"Ta Top-Mid og Short kontroll, for å så ta B site simultant med Apps spillere.",steps:[{text:"3 players tar top-mid: smoke window, smoke connector, flash over",players:["S15T3M","Ole","Birk"]},{text:"2 players lurker B apps — vent på timing",players:["propit3","Mekkis"]},{text:"Short players dropper inn på B site ved entry frag",players:["Ole","Birk"]},{text:"Smoke window og door — split siten fra Short og Apps",players:["Birk","Ole","Mekkis","propit3","S15T3M"]},{text:"Plant mot Short. Post-plant: én holder bench, én short",players:[""]}],utility:[{name:"Smokes x3",detail:"Window, connector, B"},{name:"Flashes x2",detail:"Over short, bench"},{name:"Molotov",detail:"Car"}]},
-      {id:"a-execute",name:"A Site Full Execute",type:"execute",badge:"badge-execute",inspired:"",desc:"Standard 5-man A execute med smoke cover på CT, jungle og stairs.",steps:[{text:"Smoke CT spawn, jungle, stairs — kast simultant",players:["S15T3M","propit3"]},{text:"Molotov under balcony — cleane default stack",players:["Ole"]},{text:"3 players ramp, 1 via palace, 1 holder B/mid",players:["Birk","propit3","Mekkis","S15T3M","Ole"]},{text:"Flash inn over ramp — entry fragger peeker first",players:["Birk"]},{text:"Plant default eller short side avhengig av CT press",players:[""]},{text:"Post-plant: jungle/CT angles — 1 palace, 1 ramp",players:[""]}],utility:[{name:"Smokes x3",detail:"CT, jungle, stairs"},{name:"Molotov",detail:"Under balcony"},{name:"Flashes x3",detail:"Ramp, palace pop"}]},
-      {id:"mid-default",name:"Mid Pressure Default",type:"default",badge:"badge-default",inspired:"",desc:"Slow default bygd rundt mid-kontroll. Contest window, ta underpass, samle info.",steps:[{text:"Smoke window room tidlig — A lurk",players:["S15T3M"]},{text:"Ta top-mid og short control uten å over-committe",players:["Ole","Birk"]},{text:"2 players spiller default B (apps + under)",players:["propit3","Mekkis"]},{text:"Late-round: convert mid til connector eller B short push",players:["S15T3M","propit3"]},{text:"Call basert på CT rotation reads",players:["S15T3M"]}],utility:[{name:"Smoke x1",detail:"Window"},{name:"Flash x1",detail:"Top mid"},{name:"Molotov x1",detail:"Short site reaction"}]},
-      {id:"b-rush",name:"5-Man B Rush",type:"rush",badge:"badge-rush",inspired:"",desc:"Speed-based full team B rush via apartments. Overwhelm B før CT kan rotere.",steps:[{text:"Alle 5 beiner B apps",players:["Birk","Mekkis","propit3","Ole","S15T3M"]},{text:"1 player smoker window, flasher over",players:["Ole","propit3","S15T3M"]},{text:"Første 2 hopper ut vinduet",players:[""]},{text:"Ta site og plant umiddelbart for apps",players:[""]},{text:"2 holder short/CT rotate, 1 holder apps flank",players:[""]}],utility:[{name:"Smoke x1",detail:"CT B Window"},{name:"Flash x2",detail:"Bench, into site"}]},
-      {id:"fake-a-b",name:"A Fake into B",type:"fake",badge:"badge-fake",inspired:"",desc:"Commit 3 players til A med full utility for å dra CT rotation, redirect 2 til B.",steps:[{text:"3 players kaster full A utility: smokes, flashes, molotov",players:["S15T3M","Mekkis","propit3"]},{text:"Lag støy og presence ved ramp og palace",players:["S15T3M","Mekkis","propit3"]},{text:"Call ut når CT roterer fra B mot A",players:["Birk","Ole"]},{text:"2 lurkers rusher umiddelbart B apps",players:["Ole","Birk"]},{text:"Plant fort — 3 players roterer som post-plant support",players:["S15T3M","Mekkis","propit3"]}],utility:[{name:"Smokes x3",detail:"CT, stairs, jungle"},{name:"Flash x2",detail:"Ramp, palace"},{name:"Molotov x1",detail:"Under balcony"}]},
-      {id:"pistol-mirage",name:"Pistol: Mid B Split",type:"pistol",badge:"badge-pistol",inspired:"",desc:"Pistol: ta mid aggressivt med 3-man window/short push mens 2 presser B.",steps:[{text:"Send 2 til B apps (ingen utility — pure timing) med kevlar",players:["propit3","Mekkis"]},{text:"3 players pusher mid: smoke window, flash over top-mid",players:["S15T3M","Ole","Birk"]},{text:"Contest connector og short — deny CT mid-presence",players:["Ole","Birk"]},{text:"Hvis mid er vunnet: collapse B short med numbers advantage",players:["S15T3M","Ole","Birk"]},{text:"B players lurker apps og staller til mid er secured",players:["propit3","Mekkis"]}],utility:[{name:"Smokes x2",detail:"Window, connector"},{name:"Flashes x2",detail:"Top mid"},{name:"Molotov x1",detail:"Connector/short"}]}
-    ]
-  },
+  mirage:{name:"Mirage",meta:"CT-sided (54% CT win rate) — mid control er ryggraden",strats:[{id:"mid-split",name:"Mid-to-B Split",type:"split",badge:"badge-split",inspired:"",desc:"Ta Top-Mid og Short kontroll, for å så ta B site simultant med Apps spillere.",steps:[{text:"3 players tar top-mid: smoke window, smoke connector, flash over",players:["S15T3M","Ole","Birk"]},{text:"2 players lurker B apps — vent på timing",players:["propit3","Mekkis"]},{text:"Short players dropper inn på B site ved entry frag",players:["Ole","Birk"]},{text:"Smoke window og door — split siten fra Short og Apps",players:["Birk","Ole","Mekkis","propit3","S15T3M"]},{text:"Plant mot Short. Post-plant: én holder bench, én short",players:[""]}],utility:[{name:"Smokes x3",detail:"Window, connector, B"},{name:"Flashes x2",detail:"Over short, bench"},{name:"Molotov",detail:"Car"}]},{id:"a-execute",name:"A Site Full Execute",type:"execute",badge:"badge-execute",inspired:"",desc:"Standard 5-man A execute med smoke cover på CT, jungle og stairs.",steps:[{text:"Smoke CT spawn, jungle, stairs — kast simultant",players:["S15T3M","propit3"]},{text:"Molotov under balcony — cleane default stack",players:["Ole"]},{text:"3 players ramp, 1 via palace, 1 holder B/mid",players:["Birk","propit3","Mekkis","S15T3M","Ole"]},{text:"Flash inn over ramp — entry fragger peeker first",players:["Birk"]},{text:"Plant default eller short side avhengig av CT press",players:[""]},{text:"Post-plant: jungle/CT angles — 1 palace, 1 ramp",players:[""]}],utility:[{name:"Smokes x3",detail:"CT, jungle, stairs"},{name:"Molotov",detail:"Under balcony"},{name:"Flashes x3",detail:"Ramp, palace pop"}]},{id:"mid-default",name:"Mid Pressure Default",type:"default",badge:"badge-default",inspired:"",desc:"Slow default bygd rundt mid-kontroll. Contest window, ta underpass, samle info.",steps:[{text:"Smoke window room tidlig — A lurk",players:["S15T3M"]},{text:"Ta top-mid og short control uten å over-committe",players:["Ole","Birk"]},{text:"2 players spiller default B (apps + under)",players:["propit3","Mekkis"]},{text:"Late-round: convert mid til connector eller B short push",players:["S15T3M","propit3"]},{text:"Call basert på CT rotation reads",players:["S15T3M"]}],utility:[{name:"Smoke x1",detail:"Window"},{name:"Flash x1",detail:"Top mid"},{name:"Molotov x1",detail:"Short site reaction"}]},{id:"b-rush",name:"5-Man B Rush",type:"rush",badge:"badge-rush",inspired:"",desc:"Speed-based full team B rush via apartments. Overwhelm B før CT kan rotere.",steps:[{text:"Alle 5 beiner B apps",players:["Birk","Mekkis","propit3","Ole","S15T3M"]},{text:"1 player smoker window, flasher over",players:["Ole","propit3","S15T3M"]},{text:"Første 2 hopper ut vinduet",players:[""]},{text:"Ta site og plant umiddelbart for apps",players:[""]},{text:"2 holder short/CT rotate, 1 holder apps flank",players:[""]}],utility:[{name:"Smoke x1",detail:"CT B Window"},{name:"Flash x2",detail:"Bench, into site"}]},{id:"fake-a-b",name:"A Fake into B",type:"fake",badge:"badge-fake",inspired:"",desc:"Commit 3 players til A med full utility for å dra CT rotation, redirect 2 til B.",steps:[{text:"3 players kaster full A utility: smokes, flashes, molotov",players:["S15T3M","Mekkis","propit3"]},{text:"Lag støy og presence ved ramp og palace",players:["S15T3M","Mekkis","propit3"]},{text:"Call ut når CT roterer fra B mot A",players:["Birk","Ole"]},{text:"2 lurkers rusher umiddelbart B apps",players:["Ole","Birk"]},{text:"Plant fort — 3 players roterer som post-plant support",players:["S15T3M","Mekkis","propit3"]}],utility:[{name:"Smokes x3",detail:"CT, stairs, jungle"},{name:"Flash x2",detail:"Ramp, palace"},{name:"Molotov x1",detail:"Under balcony"}]},{id:"pistol-mirage",name:"Pistol: Mid B Split",type:"pistol",badge:"badge-pistol",inspired:"",desc:"Pistol: ta mid aggressivt med 3-man window/short push mens 2 presser B.",steps:[{text:"Send 2 til B apps (ingen utility — pure timing) med kevlar",players:["propit3","Mekkis"]},{text:"3 players pusher mid: smoke window, flash over top-mid",players:["S15T3M","Ole","Birk"]},{text:"Contest connector og short — deny CT mid-presence",players:["Ole","Birk"]},{text:"Hvis mid er vunnet: collapse B short med numbers advantage",players:["S15T3M","Ole","Birk"]},{text:"B players lurker apps og staller til mid er secured",players:["propit3","Mekkis"]}],utility:[{name:"Smokes x2",detail:"Window, connector"},{name:"Flashes x2",detail:"Top mid"},{name:"Molotov x1",detail:"Connector/short"}]}]},
   inferno:{name:"Inferno",meta:"Slightly T-sided (53% T win rate) — banana control bestemmer rundeutfallet",strats:[{id:"banana-b",name:"Banana Control to B Execute",type:"execute",badge:"badge-execute",inspired:"",desc:"Etabler dominant banana-kontroll med 3 players, execute B site med full utility.",steps:[{text:"3 players fighter banana: smoke CT og car, molotov top banana",players:["S15T3M","Ole","propit3"]},{text:"Gri for banana-kontroll — ikke commit siten før den er vunnet",players:["Ole","propit3"]},{text:"Kast smoke inn i B site (CT cross, coffin)",players:["S15T3M","Ole"]},{text:"Flash over balcony og entry frag inn på siten",players:["Birk"]},{text:"Plant bak coffins — beste post-plant posisjon",players:["propit3","S15T3M"]},{text:"2 players short apps som fake/support",players:["Mekkis","S15T3M"]}],utility:[{name:"Smokes x3",detail:"CT, car, coffin"},{name:"Molotov x2",detail:"Top banana, site"},{name:"Flash x2",detail:"Over balcony"}]},{id:"a-split",name:"Apps + Arch A Split",type:"split",badge:"badge-split",inspired:"",desc:"Split A fra apartments og arch simultant, fanger CT anchor i crossfire.",steps:[{text:"2 players pusher apartments med smoke short og flash",players:["Birk","propit3"]},{text:"2 players pusher arch — én gir flash-support",players:["S15T3M","Ole"]},{text:"Smoke CT cross, library; molotov pit tidlig",players:["Ole","propit3"]},{text:"Time spliten: arch peeker når apps entryer",players:["S15T3M","Ole"]},{text:"Plant i default eller pit-side",players:["propit3","Birk"]},{text:"1 lurk banana som flank-denial",players:["Mekkis"]}],utility:[{name:"Smokes x3",detail:"CT cross, library, short"},{name:"Molotov x1",detail:"Pit"},{name:"Flash x3",detail:"Apps, arch, site"}]},{id:"mid-control",name:"Mid Control into A",type:"default",badge:"badge-default",inspired:"",desc:"Contest mid tidlig via banana og T ramp — samle info, bruk sen mid-access.",steps:[{text:"Smoke top mid, molotov banana for å stalle",players:["S15T3M","Ole"]},{text:"2 players pusher mid aggressivt",players:["propit3","Mekkis"]},{text:"Lett banana-press — ikke trade unødvendig",players:["Ole"]},{text:"Bruk mid til å kutte CT-rotasjoner",players:["S15T3M"]},{text:"Late round: A execute fra apartments eller B via mid",players:["S15T3M","Birk","propit3"]}],utility:[{name:"Smoke x2",detail:"Top mid, CT"},{name:"Molotov x1",detail:"Top banana"},{name:"Flash x2",detail:"Mid entry"}]},{id:"b-rush-inferno",name:"5-Man B Rush",type:"rush",badge:"badge-rush",inspired:"Falcons — surprise element",desc:"Rush B via banana med hele laget — smoke CT og bruk molotovs for å nekte holds.",steps:[{text:"Alle 5 rusher banana — grenades på top banana tidlig",players:["Birk","Mekkis","propit3","Ole","S15T3M"]},{text:"Smoke CT/B cross, molotov B car",players:["Ole","propit3"]},{text:"Flash over balcony",players:["Mekkis"]},{text:"Entry peeker venstre (dark/coffins), andre flommer inn",players:["Birk"]},{text:"Plant coffin-side umiddelbart",players:["propit3","S15T3M"]},{text:"2 holder banana/CT entry, andre holder site-angles",players:["S15T3M","Ole","Mekkis"]}],utility:[{name:"Smokes x2",detail:"CT, B cross"},{name:"Molotov x2",detail:"Top banana, car"},{name:"Flash x2",detail:"Over balcony"}]},{id:"a-fake-b",name:"A Fake to B Banana",type:"fake",badge:"badge-fake",inspired:"",desc:"Commit aggressiv apps-push med utility for å dra A-rotasjon, redirect gjennom banana.",steps:[{text:"2 players pusher apartments aggressivt — smoke short, flash deep",players:["propit3","Ole"]},{text:"Lag maks støy og presence",players:["propit3","Ole"]},{text:"3 players tar stille banana-kontroll",players:["S15T3M","Birk","Mekkis"]},{text:"Når A-rotasjon committer, call execute B",players:["S15T3M"]},{text:"Smoke CT fra banana, entry frag umiddelbart",players:["Birk","Mekkis"]}],utility:[{name:"Smokes x3",detail:"Apps short, CT, balcony"},{name:"Flash x2",detail:"Apps, site flash"},{name:"Molotov x1",detail:"B car"}]},{id:"pistol-inferno",name:"Pistol: 5-Man B Rush",type:"pistol",badge:"badge-pistol",inspired:"",desc:"5-player banana rush — den dominante Inferno pistol-strategien.",steps:[{text:"Buy: 3x kevlar, 1x smoke, 1x molotov",players:["Ole","propit3","S15T3M"]},{text:"Alle 5 sprinter banana ved rundestart",players:["Birk","Mekkis","propit3","Ole","S15T3M"]},{text:"Molotov top banana — tvinger CTs tilbake",players:["propit3"]},{text:"Smoke CT ved banana-kontroll",players:["Ole"]},{text:"Flash over balcony — flood inn",players:["Birk"]},{text:"Plant coffin-side, hold CT og balcony",players:["S15T3M","Mekkis"]}],utility:[{name:"Smoke x1",detail:"CT cross"},{name:"Molotov x1",detail:"Top banana"},{name:"Flash x1",detail:"Over balcony"}]}]},
   nuke:{name:"Nuke",meta:"Most CT-sided (57% CT win rate) — vertikal play og tålmodighet er nøkkelen",strats:[{id:"outside-b",name:"Outside and Ramp to B",type:"execute",badge:"badge-execute",inspired:"",desc:"Ta outside-kontroll tidlig for å true både A og B (secret).",steps:[{text:"Smoke walls og main tidlig",players:["S15T3M","Ole","propit3"]},{text:"3 players tar yard — contest silo og outside",players:["Birk","propit3","Mekkis"]},{text:"2 players tar lobby/ramp kontroll",players:["S15T3M","Ole"]},{text:"Outside players går ned og tar secret kontroll",players:["Birk","propit3","Mekkis"]},{text:"Ramp og Outside tar site simultant og planter",players:["propit3","S15T3M","Ole","Birk","Mekkis"]}],utility:[{name:"Smokes x4",detail:"Walls, Main, Afterplant, Ramp"},{name:"Flash x3",detail:"Secret, lower entry, silo"},{name:"Molotov x2",detail:"Secret, Redboks"}]},{id:"upper-a-split",name:"Ramp + Hut A Split",type:"split",badge:"badge-split",inspired:"",desc:"Press A simultant fra T ramp og gjennom hut.",steps:[{text:"1 player committer hardt til T ramp med smoke ramp room",players:["propit3"]},{text:"3 players går hut, venter på utility, pusher på flash",players:["Mekkis","Birk","Ole"]},{text:"Kaster smoke Heaven, Molly top Hut og Flash",players:["S15T3M"]},{text:"Ramp går når hut players entryer",players:["Birk","Ole","propit3","Mekkis"]},{text:"Smoke Main og Heaven, plant default A",players:[""]},{text:"Hold ramp room + outside post-plant",players:[""]}],utility:[{name:"Smokes x3",detail:"Ramp room, Main, Heaven"},{name:"Molotov x1",detail:"Default A"},{name:"Flash x2",detail:"Ramp, hut peek"}]},{id:"nuke-outside-fake",name:"Outside Fake",type:"fake",badge:"badge-fake",inspired:"",desc:"Kaster outside smokes (walls), 1 lurker outside og 4 går mot ramp.",steps:[{text:"1 player smoker walls outside, tar yard og outside kontroll",players:["Ole"]},{text:"4 players contester ramp",players:["Birk","propit3","Mekkis","S15T3M"]},{text:"Outside prøver på timing main/hell/secret",players:["Ole"]},{text:"Mid-round call basert på CT-tall",players:["S15T3M","propit3"]},{text:"Execute svakeste site med numbers advantage",players:[""]}],utility:[{name:"Smoke x2",detail:"Outside, ramp lobby"},{name:"Flash x1",detail:"Outside wall"},{name:"Molotov x1",detail:"CT aggression denial"}]},{id:"hut-rush",name:"Hut Push + Singledoor Utility",type:"rush",badge:"badge-rush",inspired:"",desc:"3 players rusher hut, 1 mollyer top hut og 1 utility singledoor.",steps:[{text:"3 players beiner hut — 1 legger smoke",players:["Birk","propit3","Mekkis"]},{text:"1 player kaster HE door, Smoke main og flash bak fakevent",players:["Ole"]},{text:"1 player mollyer top hut og holder lobby flank",players:["S15T3M"]},{text:"Plant safe og hold afterplant",players:[""]}],utility:[{name:"Smoke x2",detail:"Molly og Main"},{name:"Flash x3",detail:"Fakevent"},{name:"Molotov x1",detail:"Default lower corner"}]},{id:"nuke-default",name:"Default",type:"default",badge:"badge-default",inspired:"",desc:"3 players outside, 2 players lobby/ramp.",steps:[{text:"3 players går outside, smoker walls, tar kontroll",players:["propit3","Birk","Mekkis"]},{text:"2 players tar lobby og radio kontroll",players:["Ole","S15T3M"]},{text:"Spiller runden på info",players:["propit3","Birk","Mekkis"]},{text:"Committer mot den svakere siten",players:["S15T3M","propit3"]}],utility:[{name:"Smokes x2",detail:"Outside, Main"},{name:"Flash x2",detail:"Outside"},{name:"Molotov x2",detail:"Secret, A site"}]},{id:"pistol-nuke",name:"Pistol: Ramp Rush Alle Mann",type:"pistol",badge:"badge-pistol",inspired:"Finland SPESIAL",desc:"Alle 5 beiner ramp. Dreper vi ramp går vi ned, dropper han går vi heaven.",steps:[{text:"3x kevlar, 1x smoke+2x flash, 1x molly",players:["S15T3M","Ole"]},{text:"5 players pusher ramp — hopper rundt hjørner med hodet ned",players:["Ole","propit3","S15T3M","Mekkis","Birk"]},{text:"Dreper vi Ramp: ned. Dropper han: Heaven",players:["S15T3M"]},{text:"Plant og spill smart i afterplant",players:["S15T3M"]}],utility:[{name:"Smoke x1",detail:"Hell/Main"},{name:"Flash x2",detail:"Ramp"}]}]},
   overpass:{name:"Overpass",meta:"CT-sided (55% CT win rate) — monster og bathrooms-kontroll er nøkkelen",strats:[{id:"b-monster",name:"B Site Monster Execute",type:"execute",badge:"badge-execute",inspired:"",desc:"Beine monster som et reint helvete.",steps:[{text:"4 players pusher monster fort",players:["Ole","propit3","S15T3M","Birk","Mekkis"]},{text:"1 player gir water-flash x2 og går short",players:["Ole","propit3","S15T3M","Birk","Mekkis"]},{text:"Plant safe — hold B short og CT post-plant",players:[""]}],utility:[{name:"Smokes x3",detail:"Short, Heaven, Bridge"},{name:"Flash x3",detail:"B short, site"},{name:"Molotov x1",detail:"Toxic"}]},{id:"a-split-op",name:"A Site Long-Banana Split",type:"split",badge:"badge-split",inspired:"",desc:"Split A via long og A Banana simultant.",steps:[{text:"2 players pusher long aggressivt",players:["S15T3M","propit3"]},{text:"2 players tar toilets og gjør klar Bank og Dumster smoke",players:["Ole","Birk"]},{text:"1 player lurker B short/monster — ikke dø!",players:["Mekkis"]},{text:"Short players smoker Bank og Dumster, long molly truck — simultant",players:["S15T3M","propit3","Ole","Birk"]},{text:"Flash inn — plant default eller heaven-side",players:[""]}],utility:[{name:"Smokes x3",detail:"Bank, Dumster, Toilets"},{name:"Flash x3",detail:"Long, Banana, Site"},{name:"Molotov x1",detail:"Truck"}]},{id:"water-default",name:"Default",type:"default",badge:"badge-default",inspired:"",desc:"Ta mid/fountain, connector og B short kontroll.",steps:[{text:"2 players tar short — holder passivt",players:["propit3","Ole"]},{text:"1 player tar connector kontroll",players:["S15T3M"]},{text:"2 players tar mid/fountain kontroll",players:["Birk","Mekkis"]},{text:"Les CT-posisjoner — roter mot svakeste side",players:["S15T3M","Ole","propit3","Mekkis","Birk"]},{text:"Late execute med smokes",players:["S15T3M","propit3","Ole"]}],utility:[{name:"Smoke x2",detail:"CT, short site"},{name:"Flash x2",detail:"Short, mid/long"},{name:"Molotov x1",detail:"Reactive use"}]},{id:"b-fake-a",name:"B Fake into A Long",type:"fake",badge:"badge-fake",inspired:"",desc:"Commit 2 players til B monster-press med utility, avled til A long.",steps:[{text:"2 players smoker og flasher B aggressivt — maks støy",players:["Ole","S15T3M"]},{text:"1 player blir igjen B, den andre regrouper på A",players:["Ole","S15T3M"]},{text:"3 players pusher A long stille",players:["Birk","Mekkis","propit3"]},{text:"Når B CT roterer — execute A med Bank/Dumster smokes",players:["Birk","Mekkis","propit3"]},{text:"Plant for Banana og hold",players:[""]}],utility:[{name:"Smokes x3",detail:"Monster fake + A Bank, Dumster"},{name:"Flash x2",detail:"B fake, A entry"},{name:"Molotov x1",detail:"B fake"}]},{id:"pistol-op",name:"Pistol: B Rush Monster",type:"pistol",badge:"badge-pistol",inspired:"",desc:"Rush B via monster med rask smoke på short.",steps:[{text:"3x kevlar, 1x smoke+1x molly, 1x 2x flash",players:["Birk","Mekkis","propit3","Ole","S15T3M"]},{text:"4 rusher monster, 1 flashes 2x og går short",players:["Birk","Mekkis","propit3","Ole","S15T3M"]},{text:"Smoke short umiddelbart ute av monster",players:["S15T3M"]},{text:"Ta site og plant fort",players:["Birk","Mekkis","propit3","Ole","S15T3M"]},{text:"Hold short og CT wall — ikke over-peek",players:[""]}],utility:[{name:"Smoke x1",detail:"B short"},{name:"Flash x2",detail:"Over site, pillar flash"},{name:"Molotov x1",detail:"Toxic"}]}]},
   ancient:{name:"Ancient",meta:"Slightly CT-sided (51% CT win rate) — mid og cave-kontroll definerer rundene",strats:[{id:"mid-b-anc",name:"Mid Control into B Execute",type:"execute",badge:"badge-execute",inspired:"",desc:"Ta mid og cave-kontroll, swing B fra to retninger.",steps:[{text:"2 players pusher mid — smoke redroom, flash top mid",players:["Birk","propit3"]},{text:"1 player pusher cave fra T side med flash",players:["Ole"]},{text:"Smoke Long og Short — commit B når cave er vunnet",players:["Ole","propit3"]},{text:"Mid player blir med B ved entry",players:["Birk"]},{text:"Entry gjennom ramp eller cave simultant",players:["Birk","Mekkis"]},{text:"Plant default — hold cave og CT angles",players:[""]}],utility:[{name:"Smokes x3",detail:"redroom, CT, ramp"},{name:"Flash x3",detail:"Mid, cave, site"},{name:"Molotov x1",detail:"B default"}]},{id:"a-execute-anc",name:"Mid A Split",type:"execute",badge:"badge-execute",inspired:"",desc:"Execute A via ruins og short/temple simultant.",steps:[{text:"3 players går mid, 2 players via main",players:["Birk","Mekkis","Ole","S15T3M","propit3"]},{text:"Smoke redroom, donut, ta mid kontroll",players:["Mekkis","Ole","Birk"]},{text:"Smoke CT, Temple, Molly broky",players:["propit3","S15T3M"]},{text:"Ta donut med molly og flash",players:["Birk","Mekkis"]},{text:"Tar siten simultant fra A main og Donut",players:[""]},{text:"Plant default — hold temple og CT post-plant",players:[""]}],utility:[{name:"Smokes x4",detail:"CT, Redroom, Temple, Donut"},{name:"Molotov x1",detail:"Default A"},{name:"Flash x3",detail:"main, donut, site"}]},{id:"Default",name:"Default",type:"default",badge:"badge-default",inspired:"",desc:"Langsom default med cave og mid-kontroll prioritert.",steps:[{text:"2 players går back B — ramp og cave kontroll",players:["Ole","Mekkis"]},{text:"2 players går elbow til mid",players:["Birk","propit3"]},{text:"1 player lurker A main for info",players:["S15T3M"]},{text:"Samle CT-rotasjoner mid-round",players:["S15T3M"]},{text:"Commit til site med færrest",players:["S15T3M","Ole","Birk","propit3","Mekkis"]}],utility:[{name:"Smoke x2",detail:"Redroom, Donut"},{name:"Flash x1",detail:"Cave peek"},{name:"Molotov x1",detail:"Reaktivt"}]},{id:"b-rush-anc",name:"5-Man B Cave/Ramp Rush",type:"rush",badge:"badge-rush",inspired:"",desc:"Speed-run til B gjennom cave/ramp med alle 5.",steps:[{text:"Alle 5 beiner cave/ramp ved start",players:["Birk","Mekkis","propit3","Ole","S15T3M"]},{text:"1 smoker Long, en annen flasher B entrance",players:["Ole","S15T3M"]},{text:"Entry frag ut cave/ramp simultant",players:["Birk","propit3","Mekkis","S15T3M"]},{text:"Flood site — plant default eller cave-side",players:["propit3","Mekkis"]},{text:"2 holder cave bak, 1 mid entrance",players:[""]}],utility:[{name:"Smoke x1",detail:"Long"},{name:"Flash x2",detail:"B entrance"}]},{id:"a-fake-b-anc",name:"A Fake into B Mid",type:"fake",badge:"badge-fake",inspired:"",desc:"Tving 2 players til å kaste all A-utility, redirect gjennom mid inn i B.",steps:[{text:"2 players committer main-push — smoke, flash, molotov",players:["Ole","propit3"]},{text:"Lag støy og press i 10-12 sekunder",players:["Ole","propit3"]},{text:"2 lurks kontester stille mid under faken",players:["Birk","S15T3M"]},{text:"Når CT rotasjon bekreftet — call rotate til B",players:["S15T3M"]},{text:"Alle 5 konverter på B fra cave + mid simultant",players:["Birk","Mekkis","propit3","Ole","S15T3M"]}],utility:[{name:"Smokes x3",detail:"CT fake + B CT, elbow"},{name:"Flash x2",detail:"Ruins fake, B entry"},{name:"Molotov x1",detail:"Ruins fake"}]},{id:"pistol-anc",name:"Pistol: Mid, Donut to A",type:"pistol",badge:"badge-pistol",inspired:"",desc:"4 Spillere pusher elbow til donut og A, 1 går A main.",steps:[{text:"4 players rusher donut — send 1 til main for A anchor",players:["Birk","propit3","Ole","S15T3M","Mekkis"]},{text:"Kaster insta smoke Redroom, flasher mid",players:["S15T3M"]},{text:"Flood site og plant short-side/default",players:[""]},{text:"Spiller afterplant fra Donut og A main",players:[""]}],utility:[{name:"Smoke x1",detail:"Redroom"},{name:"Flashes x2",detail:"mid, site entry"}]}]},
-  anubis:{name:"Anubis",meta:"Most T-sided (57% T win rate) — mid bridge og water routes er dominante",strats:[{id:"mid-a-anubis",name:"Mid Bridge to A Execute",type:"execute",badge:"badge-execute",inspired:"",desc:"Ta kontroll over mid-bridge, split Camera og A main.",steps:[{text:"3 players tar mid-bridge, smoke window, molly cubby mid",players:["S15T3M","Ole","propit3"]},{text:"2 players tar A water og holder A main",players:["Birk","Mekkis"]},{text:"Pauser mid-round for å catche evt pushes",players:["S15T3M","Ole","propit3","Birk","Mekkis"]},{text:"Redirect mid-players inn i Camera og ta A",players:["S15T3M","Ole","propit3"]},{text:"A main players tar A main simultant",players:["Birk","Mekkis"]},{text:"Plant mot A main — hold camera og heaven",players:[""]}],utility:[{name:"Smokes x4",detail:"Window, Connector, Temple, Heaven"},{name:"Flash x3",detail:"Bridge, A entry, site"},{name:"Molotov x1",detail:"Mid-cubby"}]},{id:"water-b-anubis",name:"Water + B Main Split",type:"execute",badge:"badge-execute",inspired:"",desc:"Push B via water og B main simultant.",steps:[{text:"2 players tar water — mot connector",players:["Ole","propit3"]},{text:"3 players går B main, 1 smoker CT og flasher inn",players:["S15T3M","Birk","Mekkis"]},{text:"Flash over siten når players entrer fra water",players:["S15T3M"]},{text:"Push simultant fra B main og Connector",players:["Ole","propit3","S15T3M","Birk","Mekkis"]},{text:"Plant default B — hold temple exit, connector og CT",players:[""]}],utility:[{name:"Smokes x3",detail:"Connector, CT B"},{name:"Flash x3",detail:"Water entry, site"},{name:"Molotov x1",detail:"B main corner"}]},{id:"anubis-default",name:"Aggressive Mid Default",type:"default",badge:"badge-default",inspired:"Pro meta — Anubis favoriserer aggressive T defaults",desc:"Tidlig mid-press for å samle info, split CTs mellom mid og site defense.",steps:[{text:"2 players contester Mid-Bridge",players:["S15T3M","propit3"]},{text:"Gjenværende kjører balansert A/B presence",players:["Birk","Ole","Mekkis"]},{text:"Convert mid-kontroll til svakeste site",players:["S15T3M"]},{text:"Default uten utility — pure posisjonelle reads",players:[""]}],utility:[{name:"Smoke x1",detail:"Heaven or connector"},{name:"Flash x1",detail:"Bridge"},{name:"Molotov x1",detail:"Mid-Cubby"}]},{id:"a-rush-anubis",name:"5-Man A Main Rush",type:"rush",badge:"badge-rush",inspired:"",desc:"Basically pistol round med våpen.",steps:[{text:"Alle 5 går A — bruk carpet istedenfor stairs",players:["Birk","Mekkis","propit3","Ole","S15T3M"]},{text:"4 players entry, 1 smoker Bigbox, molly Camera, flasher inn",players:["S15T3M"]},{text:"Ta kontroll på siten før CT rekker å rotere",players:["Birk","Mekkis","propit3","Ole"]},{text:"Plant mot main med beskyttelse",players:[""]},{text:"Smoke player forsvarer A main flank",players:["S15T3M"]},{text:"Hold ruins og connector post-plant",players:[""]}],utility:[{name:"Smoke x1",detail:"Bigbox"},{name:"Flash x2",detail:"Into A site"},{name:"Molotov x1",detail:"Camera"}]},{id:"anubis-fake",name:"Johannes SPESIAL",type:"fake",badge:"badge-fake",inspired:"",desc:"4 players sitter inne i B main smoke som CT kaster. Kaster de ikke smoke, caller vi av.",steps:[{text:"4 players går mot B main og setter seg inn i smoken",players:["Ole","propit3","Mekkis","Birk"]},{text:"1 player flasher 2x",players:["S15T3M"]},{text:"1 sjekker Jail, 1 Pillar/Connector, 2 sjekker CT/Backsite",players:["Ole","propit3","Mekkis","Birk"]},{text:"Kast smokes når B site er tatt og spill afterplant",players:[""]}],utility:[{name:"Smokes x2",detail:"Palace fake, A camera"},{name:"Flash x2",detail:"Water fake, A entry"},{name:"Molotov x1",detail:"Water fake"}]},{id:"pistol-anubis",name:"Pistol: 5-Man A Contact",type:"pistol",badge:"badge-pistol",inspired:"",desc:"4-man A contact via carpet. Flash inn A main, Smoke Big box, Molly Camera.",steps:[{text:"Buy: 3x kevlar, 1x smoke+2x flash, 1x molly",players:["Ole","S15T3M"]},{text:"4 players beveger seg carpet og venter på A Main flash",players:["Mekkis","propit3","Birk","S15T3M"]},{text:"1 player lurker stairs for window og connector push",players:["Ole"]},{text:"3 players tar A site, 1 smoker Bigbox, molly Camera",players:["Mekkis","propit3","Birk","S15T3M"]},{text:"Plant mot A main",players:[""]},{text:"Hold heaven/camera/main — ikke jag kills",players:[""]}],utility:[{name:"Smoke x1",detail:"Bigbox"},{name:"Flash x2",detail:"A site entry"},{name:"Molotov x1",detail:"Camera"}]}]},
+  anubis:{name:"Anubis",meta:"Most T-sided (57% T win rate) — mid bridge og water routes er dominante",strats:[{id:"mid-a-anubis",name:"Mid Bridge to A Execute",type:"execute",badge:"badge-execute",inspired:"",desc:"Ta kontroll over mid-bridge, split Camera og A main.",steps:[{text:"3 players tar mid-bridge, smoke window, molly cubby mid",players:["S15T3M","Ole","propit3"]},{text:"2 players tar A water og holder A main",players:["Birk","Mekkis"]},{text:"Pauser mid-round for å catche evt pushes",players:["S15T3M","Ole","propit3","Birk","Mekkis"]},{text:"Redirect mid-players inn i Camera og ta A",players:["S15T3M","Ole","propit3"]},{text:"A main players tar A main simultant",players:["Birk","Mekkis"]},{text:"Plant mot A main — hold camera og heaven",players:[""]}],utility:[{name:"Smokes x4",detail:"Window, Connector, Temple, Heaven"},{name:"Flash x3",detail:"Bridge, A entry, site"},{name:"Molotov x1",detail:"Mid-cubby"}]},{id:"water-b-anubis",name:"Water + B Main Split",type:"execute",badge:"badge-execute",inspired:"",desc:"Push B via water og B main simultant.",steps:[{text:"2 players tar water — mot connector",players:["Ole","propit3"]},{text:"3 players går B main, 1 smoker CT og flasher inn",players:["S15T3M","Birk","Mekkis"]},{text:"Flash over siten når players entrer fra water",players:["S15T3M"]},{text:"Push simultant fra B main og Connector",players:["Ole","propit3","S15T3M","Birk","Mekkis"]},{text:"Plant default B — hold temple exit, connector og CT",players:[""]}],utility:[{name:"Smokes x3",detail:"Connector, CT B"},{name:"Flash x3",detail:"Water entry, site"},{name:"Molotov x1",detail:"B main corner"}]},{id:"anubis-default",name:"Aggressive Mid Default",type:"default",badge:"badge-default",inspired:"Pro meta",desc:"Tidlig mid-press for å samle info, split CTs mellom mid og site defense.",steps:[{text:"2 players contester Mid-Bridge",players:["S15T3M","propit3"]},{text:"Gjenværende kjører balansert A/B presence",players:["Birk","Ole","Mekkis"]},{text:"Convert mid-kontroll til svakeste site",players:["S15T3M"]},{text:"Default uten utility — pure posisjonelle reads",players:[""]}],utility:[{name:"Smoke x1",detail:"Heaven or connector"},{name:"Flash x1",detail:"Bridge"},{name:"Molotov x1",detail:"Mid-Cubby"}]},{id:"a-rush-anubis",name:"5-Man A Main Rush",type:"rush",badge:"badge-rush",inspired:"",desc:"Basically pistol round med våpen.",steps:[{text:"Alle 5 går A — bruk carpet istedenfor stairs",players:["Birk","Mekkis","propit3","Ole","S15T3M"]},{text:"4 players entry, 1 smoker Bigbox, molly Camera, flasher inn",players:["S15T3M"]},{text:"Ta kontroll på siten før CT rekker å rotere",players:["Birk","Mekkis","propit3","Ole"]},{text:"Plant mot main med beskyttelse",players:[""]},{text:"Smoke player forsvarer A main flank",players:["S15T3M"]},{text:"Hold ruins og connector post-plant",players:[""]}],utility:[{name:"Smoke x1",detail:"Bigbox"},{name:"Flash x2",detail:"Into A site"},{name:"Molotov x1",detail:"Camera"}]},{id:"anubis-fake",name:"Johannes SPESIAL",type:"fake",badge:"badge-fake",inspired:"",desc:"4 players sitter inne i B main smoke som CT kaster. Kaster de ikke smoke, caller vi av.",steps:[{text:"4 players går mot B main og setter seg inn i smoken",players:["Ole","propit3","Mekkis","Birk"]},{text:"1 player flasher 2x",players:["S15T3M"]},{text:"1 sjekker Jail, 1 Pillar/Connector, 2 sjekker CT/Backsite",players:["Ole","propit3","Mekkis","Birk"]},{text:"Kast smokes når B site er tatt og spill afterplant",players:[""]}],utility:[{name:"Smokes x2",detail:"Palace fake, A camera"},{name:"Flash x2",detail:"Water fake, A entry"},{name:"Molotov x1",detail:"Water fake"}]},{id:"pistol-anubis",name:"Pistol: 5-Man A Contact",type:"pistol",badge:"badge-pistol",inspired:"",desc:"4-man A contact via carpet. Flash inn A main, Smoke Big box, Molly Camera.",steps:[{text:"Buy: 3x kevlar, 1x smoke+2x flash, 1x molly",players:["Ole","S15T3M"]},{text:"4 players beveger seg carpet og venter på A Main flash",players:["Mekkis","propit3","Birk","S15T3M"]},{text:"1 player lurker stairs for window og connector push",players:["Ole"]},{text:"3 players tar A site, 1 smoker Bigbox, molly Camera",players:["Mekkis","propit3","Birk","S15T3M"]},{text:"Plant mot A main",players:[""]},{text:"Hold heaven/camera/main — ikke jag kills",players:[""]}],utility:[{name:"Smoke x1",detail:"Bigbox"},{name:"Flash x2",detail:"A site entry"},{name:"Molotov x1",detail:"Camera"}]}]},
   dust2:{name:"Dust 2",meta:"Balanced (51% CT win rate) — long og mid-kontroll definerer T-side",strats:[{id:"b-rush-d2",name:"5-Man B Tunnels Rush",type:"rush",badge:"badge-rush",inspired:"Falcons og FURIA",desc:"Gode spawns: rush B alle mann.",steps:[{text:"Alle 5 beiner B tunnels",players:["Birk","Mekkis","propit3","Ole","S15T3M"]},{text:"1 smoker Door og Window",players:["S15T3M","propit3"]},{text:"Flash inn i lower tunnels, flash over B site",players:["Birk","Mekkis","propit3","Ole"]},{text:"Flood site og plant default bak bokser",players:[""]},{text:"Hold window og CT post-plant — ikke jag",players:[""]}],utility:[{name:"Smokes x2",detail:"Door, Window"},{name:"Flash x3",detail:"Tunnels, site x2"}]},{id:"long-a-d2",name:"Long - Short Split",type:"execute",badge:"badge-execute",inspired:"",desc:"Vinn long-kontroll og execute A med smokes på CT, short og catwalk.",steps:[{text:"2 players fighter for long med flash og evt smoke long corner",players:["propit3","Ole","Mekkis","Birk"]},{text:"2 players tar mid/short kontroll, smoke Xbox",players:["propit3","Ole","Mekkis","Birk"]},{text:"1 player lurker B tunnels og møter mid players",players:["S15T3M"]},{text:"Smoke walkway short og walk bak smoken",players:["propit3","Ole","Mekkis","Birk","S15T3M"]},{text:"Long simultant med short push",players:[""]},{text:"Plant short og hold afterplant",players:[""]}],utility:[{name:"Smokes x3",detail:"Xbox, 2x short"},{name:"Flash x3",detail:"Long, A entry, catwalk"},{name:"Molotov x1",detail:"Short-corner"}]},{id:"mid-b-d2",name:"Mid to B Split",type:"split",badge:"badge-split",inspired:"",desc:"Ta mid via Xbox, smoke CT cross, og splitt fra Mid og B tunnels.",steps:[{text:"Smoke Xbox — 3 players tar mid-kontroll",players:["S15T3M","Birk","Mekkis"]},{text:"2 players sitter B tunnels og holder",players:["Ole","propit3"]},{text:"Smoke CT cross, flash doors, push mid til B",players:["S15T3M","Birk","Mekkis"]},{text:"B tunnels pusher simultant med mid players",players:["Ole","propit3"]},{text:"Plant default — hold CT, Window og Tunnels",players:[""]}],utility:[{name:"Smokes x3",detail:"Xbox, CT Cross, site"},{name:"Flash x3",detail:"Mid, short, tunnels"}]},{id:"d2-default",name:"Info Default",type:"default",badge:"badge-default",inspired:"",desc:"Spre laget for info — 2 long, 1 mid, 2 B tunnels. Passivt og late-round call.",steps:[{text:"2 players prober long — ikke peek uten gunstig situasjon",players:[""]},{text:"1 player tar mid (xbox-area) for informasjon",players:[""]},{text:"2 players holder B tunnels passivt",players:[""]},{text:"Samle informasjon fra alle 3 sonene",players:["S15T3M"]},{text:"Late-round: execute med numbers-fordel på svakeste side",players:["S15T3M","propit3"]}],utility:[{name:"Smoke x1",detail:"Xbox"},{name:"Flash x1",detail:"Long pop"}]},{id:"d2-fake",name:"Long A Fake to B",type:"fake",badge:"badge-fake",inspired:"",desc:"Commit til long med 2 players og full utility for å dra CT-rotasjon, redirect B.",steps:[{text:"2 players fighter long aggressivt — smoke, pop flash",players:[""]},{text:"Støy og presence for å tvinge CT-rotasjon fra B",players:[""]},{text:"3 players holder B tunnels stille",players:[""]},{text:"Når CT roterer — call B execute: smoke B Doors, flash site",players:[""]},{text:"Entry frag og plant fort",players:[""]}],utility:[{name:"Smokes x2",detail:"Pit fake, CT B"},{name:"Flash x2",detail:"Long fake, B entry"},{name:"Molotov x1",detail:"Long fake"}]},{id:"pistol-d2",name:"Pistol: B Tunnels Rush",type:"pistol",badge:"badge-pistol",inspired:"Standard pro meta",desc:"Rush B med 5 players på pistol — smoke CT og cross, flash site.",steps:[{text:"Buy: 3x kevlar, 2x smoke + 3x flash",players:["Ole","S15T3M"]},{text:"Alle 5 rusher B tunnels",players:["Birk","Mekkis","propit3","Ole","S15T3M"]},{text:"Smoke Doors og Window tidlig",players:["S15T3M"]},{text:"Flash upper tunnels og over inn på siten",players:["Ole"]},{text:"Plant default, hold CT og window",players:[""]}],utility:[{name:"Smoke x2",detail:"Doors, Window"},{name:"Flashes x3",detail:"Upper tunnels, site x2"}]}]}
 };
 
 const mapOrder = ['mirage','inferno','nuke','overpass','ancient','anubis','dust2'];
 const typeLabel = {execute:'Execute',split:'Split',default:'Default',rush:'Rush',pistol:'Pistol',fake:'Fake'};
 
-/* ═══════════════ RENDER STRATS ═══════════════ */
+/* ══════════════════════════════════════════
+   RENDER: STRATBOOK
+   ══════════════════════════════════════════ */
 function renderStrats() {
   const content = document.getElementById('strat-content');
   content.innerHTML = mapOrder.map(mapId => {
@@ -1476,232 +1219,200 @@ function renderStrats() {
   }).join('');
 }
 
-/* ═══════════════ RENDER HELPERS ═══════════════ */
-
-let _countdownInterval = null;
-
+/* ══════════════════════════════════════════
+   RENDER: KAMPER
+   ══════════════════════════════════════════ */
 function _renderNextMatch(nm) {
   if (!nm) return;
-  document.getElementById('next-vs').innerHTML = `
-    <span class="us">Fjærkrebandittene</span>
-    <span class="vs">vs</span>
-    ${nm.opponent || '???'}
-  `;
+  document.getElementById('next-vs').innerHTML =
+    `<span class="us">Fjærkrebandittene</span><span class="vs">vs</span>${nm.opponent || '???'}`;
+
   let dateStr = nm.date || '';
-  if (nm.date && nm.date.match(/^\d{4}-\d{2}-\d{2}/)) {
+  if (nm.date && /^\d{4}-\d{2}-\d{2}/.test(nm.date)) {
     try {
       const d = new Date(nm.date + 'T00:00:00');
       if (!isNaN(d)) dateStr = d.toLocaleDateString('no-NO',{weekday:'long',day:'2-digit',month:'long'});
     } catch(e) {}
   }
-  document.getElementById('next-when').textContent = (dateStr || '???') + ' // ' + (nm.time || '??:??');
-  document.getElementById('next-maps').textContent = nm.mapPool && nm.mapPool.length
-    ? 'Kartpool: ' + nm.mapPool.join(' · ') : 'Kartpool: TBD';
+  document.getElementById('next-when').textContent = (dateStr||'???') + ' // ' + (nm.time||'??:??');
+  document.getElementById('next-maps').textContent = 'Kartpool: TBD';
 
-  // Alltid vis kamplenke (bruker NEXT_MATCH_URL som fallback)
-  const url = nm.matchUrl || NEXT_MATCH_URL;
   const linkEl = document.getElementById('next-match-link');
-  linkEl.href = url;
+  linkEl.href = nm.matchUrl || '#';
   linkEl.style.display = 'flex';
 
-  // Countdown
   if (_countdownInterval) clearInterval(_countdownInterval);
   let targetDate;
-  try {
-    const dp = (nm.date || '').match(/^\d{4}-\d{2}-\d{2}/) ? nm.date.substring(0,10) : '2026-04-30';
-    targetDate = new Date(dp + 'T' + (nm.time || '20:00') + ':00');
-  } catch(e) {}
-
+  try { targetDate = new Date(nm.date + 'T' + (nm.time||'20:00') + ':00'); } catch(e) {}
   function tick() {
     if (!targetDate || isNaN(targetDate)) return;
     const diff = targetDate - new Date();
-    if (diff <= 0) {
-      ['cd-d','cd-h','cd-m','cd-s'].forEach(id => document.getElementById(id).textContent = '00');
-      clearInterval(_countdownInterval); return;
-    }
+    if (diff <= 0) { ['cd-d','cd-h','cd-m','cd-s'].forEach(id=>document.getElementById(id).textContent='00'); clearInterval(_countdownInterval); return; }
     document.getElementById('cd-d').textContent = String(Math.floor(diff/86400000)).padStart(2,'0');
     document.getElementById('cd-h').textContent = String(Math.floor((diff%86400000)/3600000)).padStart(2,'0');
     document.getElementById('cd-m').textContent = String(Math.floor((diff%3600000)/60000)).padStart(2,'0');
     document.getElementById('cd-s').textContent = String(Math.floor((diff%60000)/1000)).padStart(2,'0');
   }
-  tick();
-  _countdownInterval = setInterval(tick, 1000);
+  tick(); _countdownInterval = setInterval(tick, 1000);
 }
 
-function _renderStandings(standingsArr) {
+function _renderStandings(arr) {
   const sb = document.getElementById('standings-body');
-  if (!standingsArr || standingsArr.length === 0) {
-    sb.innerHTML = '<div style="font-family:\'Share Tech Mono\',monospace;font-size:10px;color:var(--text3);padding:8px;">Ingen tabelldata</div>';
-    return;
-  }
-  sb.innerHTML = standingsArr.map(s => `
-    <div class="standing-row" ${s.withdrawn ? 'style="opacity:0.4;text-decoration:line-through"' : ''}>
+  if (!arr || !arr.length) { sb.innerHTML='<div style="font-family:\'Share Tech Mono\',monospace;font-size:10px;color:var(--text3);padding:8px;">Ingen tabelldata</div>'; return; }
+  sb.innerHTML = arr.map(s => `
+    <div class="standing-row" ${s.withdrawn?'style="opacity:0.35;text-decoration:line-through"':''}>
       <div class="standing-pos ${s.us?'us':''}">${s.pos}</div>
       <div class="standing-name ${s.us?'us':''}" style="font-size:11px">${s.name}</div>
       <div class="standing-record">
-        <span class="w">${s.w}V</span>
-        ${s.l !== undefined ? `<span class="l"> ${s.l}T</span>` : ''}
-        ${s.pts !== undefined ? `<span style="color:var(--text2);margin-left:4px">${s.pts}p</span>` : ''}
+        <span class="w">${s.w}V</span><span class="l"> ${s.l}T</span>
+        ${s.p!==undefined?`<span style="color:var(--text2);margin-left:4px">${s.p}p</span>`:''}
       </div>
-    </div>
-  `).join('');
+    </div>`).join('');
 }
 
-/* ═══════════════ RENDER KAMPER ═══════════════ */
-function renderKamper() {
-  // Use liveData if available, else fall back to screenshot data
-  const played   = liveData.results.length   ? liveData.results   : [];
-  const upcoming = liveData.upcoming.length  ? liveData.upcoming  : [];
-  const standingsArr = liveData.standings    ? liveData.standings : standings;
+function renderMapStats() {
+  const grid = document.getElementById('map-stats-grid');
+  if (!grid) return;
+  grid.innerHTML = KARTOVERSIKT.map(m => {
+    const played = m.total > 0;
+    const pctColor = m.pct === null ? 'var(--text3)' : m.pct === 100 ? 'var(--green)' : m.pct >= 50 ? 'var(--orange)' : 'var(--red)';
+    const pctLabel = m.pct === null ? '–' : m.pct + '%';
+    const diffColor = m.diff && m.diff.startsWith('+') ? 'var(--green)' : m.diff && m.diff.startsWith('-') ? 'var(--red)' : 'var(--text3)';
+    return `
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:4px;padding:12px 12px 10px;position:relative;overflow:hidden;">
+        <div style="position:absolute;top:0;left:0;right:0;height:2px;background:${pctColor};opacity:${played?'0.7':'0.2'}"></div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--text);margin-bottom:6px;">${m.name}</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:800;color:${pctColor};line-height:1;margin-bottom:6px;">${pctLabel}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;">
+          <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text3);">Seier</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--green);">${m.w}</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text3);">Tap</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:${m.l>0?'var(--red)':'var(--text3)'};">${m.l}</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text3);">Runde +/-</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:${diffColor};">${played ? m.diff : '–'}</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text3);">Vraket</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:${m.vraket>0?'var(--red)':'var(--text3)'};">${m.vraket}</div>
+        </div>
+      </div>`;
+  }).join('');
+}
 
-  // Stats
+function renderKamper() {
+  renderMapStats();
+  const played   = liveData.results  || [];
+  const upcoming = liveData.upcoming || [];
+  const standings = liveData.standings || TABELL;
+
   const wins   = played.filter(m=>m.result==='win').length;
   const losses = played.filter(m=>m.result==='loss').length;
   const draws  = played.filter(m=>m.result==='draw').length;
   const total  = played.length;
-  const wr = total > 0 ? Math.round((wins/total)*100) : 0;
+  const wr     = total > 0 ? Math.round(wins/total*100) : 0;
 
-  let streak = 0, streakType = '';
-  for(let i = played.length-1; i>=0; i--) {
-    if(i === played.length-1) { streakType = played[i].result; streak = 1; }
-    else if(played[i].result === streakType) streak++;
+  let streak=0, streakType='';
+  for(let i=played.length-1;i>=0;i--){
+    if(i===played.length-1){streakType=played[i].result;streak=1;}
+    else if(played[i].result===streakType)streak++;
     else break;
   }
-  const streakLabel = streakType === 'win' ? `W${streak}` : streakType === 'loss' ? `L${streak}` : (streak||'-');
+  const streakLabel = streakType==='win'?`W${streak}`:streakType==='loss'?`L${streak}`:(streak||'-');
 
   document.getElementById('stat-w').textContent  = wins;
   document.getElementById('stat-l').textContent  = losses;
   document.getElementById('stat-d').textContent  = draws;
-  document.getElementById('stat-wr').textContent = wr + '%';
+  document.getElementById('stat-wr').textContent = wr+'%';
   document.getElementById('stat-s').textContent  = streakLabel;
 
-  // Played
-  const playedList = document.getElementById('played-list');
-  if (played.length === 0) {
-    playedList.innerHTML = '<div style="font-family:\'Share Tech Mono\',monospace;font-size:11px;color:var(--text3);padding:14px;text-align:center;">Ingen spillte kamper ennå</div>';
-  } else {
-    playedList.innerHTML = [...played].reverse().map(m => {
-      let dateStr = m.date || '';
-      try {
-        const d = m.date ? (m.date.includes('T') ? new Date(m.date) : new Date(m.date+'T00:00:00')) : null;
-        if (d && !isNaN(d)) dateStr = d.toLocaleDateString('no-NO', {day:'2-digit',month:'short',year:'numeric'});
-      } catch(e) {}
-      const mapTags = (m.maps||[]).map(mp => `
-        <span class="map-tag played ${mp.result}">${mp.name} ${mp.scoreUs}–${mp.scoreThem}</span>
-      `).join('');
-      const scoreHtml = m.scoreUs !== null && m.scoreUs !== undefined ? `
+  // Spillte kamper
+  const pl = document.getElementById('played-list');
+  pl.innerHTML = played.length ? [...played].reverse().map(m => {
+    let dateStr = m.date||'';
+    try { const d=new Date(m.date+'T00:00:00'); if(!isNaN(d)) dateStr=d.toLocaleDateString('no-NO',{day:'2-digit',month:'short',year:'numeric'}); } catch(e){}
+    const mapTags = (m.maps||[]).map(mp=>`<span class="map-tag played ${mp.result}">${mp.name} ${mp.scoreUs}–${mp.scoreThem}</span>`).join('');
+    const clickable = m.matchUrl ? `onclick="window.open('${m.matchUrl}','_blank')" style="cursor:pointer"` : '';
+    return `<div class="match-card ${m.result}" ${clickable}>
+      <div class="match-meta">
+        <div class="date">${dateStr}</div><div>${m.time||''}</div>
+        <div style="margin-top:4px">Komplettligaen CS2</div><div>${m.format||'Bo3'}</div>
+      </div>
+      <div class="match-teams">
+        <div class="match-team-row"><div class="team-name us">Fjærkrebandittene</div></div>
+        <div class="match-team-row"><div class="team-name">${m.opponent}</div></div>
+        ${mapTags?`<div class="match-map-tags">${mapTags}</div>`:''}
+      </div>
+      <div class="match-score">
         <div class="score-display">
           <span class="${m.result==='win'?'s-win':'s-loss'}">${m.scoreUs}</span>
           <span class="s-sep">:</span>
           <span class="${m.result==='win'?'s-loss':'s-win'}">${m.scoreThem}</span>
         </div>
         <div><span class="result-badge rb-${m.result}">${m.result==='win'?'SEIER':m.result==='draw'?'UAVGJORT':'TAP'}</span></div>
-      ` : '';
-      const cardLink = m.matchUrl ? `onclick="window.open('${m.matchUrl}','_blank')" style="cursor:pointer"` : '';
-      return `
-        <div class="match-card ${m.result}" ${cardLink}>
-          <div class="match-meta">
-            <div class="date">${dateStr}</div>
-            <div>${m.time||''}</div>
-            <div style="margin-top:4px">Komplettligaen CS2</div>
-            <div>Bo2</div>
-          </div>
-          <div class="match-teams">
-            <div class="match-team-row"><div class="team-name us">Fjærkrebandittene</div></div>
-            <div class="match-team-row"><div class="team-name">${m.opponent||'???'}</div></div>
-            ${mapTags ? `<div class="match-map-tags">${mapTags}</div>` : ''}
-          </div>
-          <div class="match-score">${scoreHtml}</div>
-        </div>
-      `;
-    }).join('');
-  }
+      </div>
+    </div>`;
+  }).join('')
+  : '<div style="font-family:\'Share Tech Mono\',monospace;font-size:11px;color:var(--text3);padding:14px;text-align:center;">Ingen spillte kamper ennå</div>';
 
-  // Upcoming
-  const upcomingList = document.getElementById('upcoming-list');
-  if (upcoming.length === 0) {
-    upcomingList.innerHTML = '<div style="font-family:\'Share Tech Mono\',monospace;font-size:11px;color:var(--text3);padding:14px;text-align:center;">Ingen kommende kamper funnet</div>';
-  } else {
-    upcomingList.innerHTML = upcoming.map(m => {
-      let dateStr = m.date || '';
-      try {
-        const d = m.date ? (m.date.includes('T') ? new Date(m.date) : new Date(m.date+'T00:00:00')) : null;
-        if (d && !isNaN(d)) dateStr = d.toLocaleDateString('no-NO', {weekday:'long',day:'2-digit',month:'long'});
-      } catch(e) {}
-      const cardLink = m.matchUrl ? `onclick="window.open('${m.matchUrl}','_blank')" style="cursor:pointer"` : '';
-      return `
-        <div class="match-card upcoming" ${cardLink}>
-          <div class="match-meta">
-            <div class="date">${dateStr}</div>
-            <div>${m.time||'??:??'}</div>
-            <div style="margin-top:4px">Komplettligaen CS2</div>
-            <div>Bo2</div>
-          </div>
-          <div class="match-teams">
-            <div class="match-team-row"><div class="team-name us">Fjærkrebandittene</div></div>
-            <div class="match-team-row"><div class="team-name">${m.opponent||'???'}</div></div>
-            <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text3);margin-top:6px;">Kartpool: TBD</div>
-          </div>
-          <div class="match-score">
-            <div style="font-size:13px;color:var(--orange);font-family:'Barlow Condensed',sans-serif;font-weight:700;">KOMMENDE</div>
-            <div style="margin-top:6px"><span class="result-badge rb-upcoming">PLANLAGT</span></div>
-            ${m.matchUrl ? `<div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text3);margin-top:6px;">↗ gamer.no</div>` : ''}
-          </div>
-        </div>
-      `;
-    }).join('');
-  }
+  // Kommende kamper
+  const ul = document.getElementById('upcoming-list');
+  ul.innerHTML = upcoming.length ? upcoming.map(m => {
+    let dateStr = m.date||'';
+    try { const d=new Date(m.date+'T00:00:00'); if(!isNaN(d)) dateStr=d.toLocaleDateString('no-NO',{weekday:'long',day:'2-digit',month:'long'}); } catch(e){}
+    const clickable = m.matchUrl ? `onclick="window.open('${m.matchUrl}','_blank')" style="cursor:pointer"` : '';
+    return `<div class="match-card upcoming" ${clickable}>
+      <div class="match-meta">
+        <div class="date">${dateStr}</div><div>${m.time||'??:??'}</div>
+        <div style="margin-top:4px">Komplettligaen CS2</div><div>${m.format||'Bo3'}</div>
+      </div>
+      <div class="match-teams">
+        <div class="match-team-row"><div class="team-name us">Fjærkrebandittene</div></div>
+        <div class="match-team-row"><div class="team-name">${m.opponent}</div></div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text3);margin-top:6px;">Kartpool: TBD · ${m.format||'Bo3'}</div>
+      </div>
+      <div class="match-score">
+        <div style="font-size:13px;color:var(--orange);font-family:'Barlow Condensed',sans-serif;font-weight:700;">KOMMENDE</div>
+        <div style="margin-top:6px"><span class="result-badge rb-upcoming">PLANLAGT</span></div>
+        ${m.matchUrl?`<div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text3);margin-top:6px;">↗ gamer.no</div>`:''}
+      </div>
+    </div>`;
+  }).join('')
+  : '<div style="font-family:\'Share Tech Mono\',monospace;font-size:11px;color:var(--text3);padding:14px;text-align:center;">Ingen kommende kamper</div>';
 
-  // Standings
-  _renderStandings(standingsArr);
-
-  // Next match — first upcoming, else hardcoded
-  const nextMatch = upcoming[0] || {
-    opponent: '???',
-    date: '2026-04-30',
-    time: '20:00',
-    matchUrl: NEXT_MATCH_URL,
-  };
-  _renderNextMatch(nextMatch);
+  _renderStandings(standings);
+  const nm = upcoming.find(m=>m.isNext) || upcoming[0];
+  if (nm) _renderNextMatch(nm);
 }
 
-
-
-/* ═══════════════ NAV ═══════════════ */
+/* ══════════════════════════════════════════
+   NAV
+   ══════════════════════════════════════════ */
 function showPage(page) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.getElementById('page-' + page).classList.add('active');
-  document.querySelectorAll('.main-nav button').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.querySelectorAll('.main-nav button').forEach(b=>b.classList.remove('active'));
   event.target.classList.add('active');
-  const sidebar = document.getElementById('sidebar');
-  if(page === 'strats') { sidebar.classList.add('visible'); }
-  else { sidebar.classList.remove('visible'); }
+  document.getElementById('sidebar').classList.toggle('visible', page==='strats');
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
 function setSidebarActive(el) {
-  document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+  document.querySelectorAll('.sidebar-link').forEach(l=>l.classList.remove('active'));
   el.classList.add('active');
 }
 
-/* ═══════════════ CLOCK ═══════════════ */
 function updateClock() {
-  const now = new Date();
-  document.getElementById('clock').textContent = now.toLocaleTimeString('no-NO');
+  const el = document.getElementById('clock');
+  if (el) el.textContent = new Date().toLocaleTimeString('no-NO');
 }
 setInterval(updateClock, 1000);
 updateClock();
 
-/* Init */
+/* ══════════════════════════════════════════
+   INIT
+   ══════════════════════════════════════════ */
 (function init() {
   try { renderStrats(); } catch(e) { console.error('renderStrats:', e); }
-  try { renderKamper(); } catch(e) { console.error('renderKamper:', e); }
-  loadLiveData();
+  try { loadLiveData(); } catch(e) { console.error('loadLiveData:', e); }
 })();
-
-
-
-
 
 </script>
 </body>
