@@ -961,11 +961,11 @@ body::before {
           <div class="section-divider">Kartoversikt</div>
           <div id="map-stats-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:24px;"></div>
 
-          <div class="section-divider">Spillte kamper</div>
-          <div class="match-list" id="played-list"></div>
-
           <div class="section-divider">Kommende kamper</div>
           <div class="match-list" id="upcoming-list"></div>
+
+          <div class="section-divider">Spillte kamper</div>
+          <div class="match-list" id="played-list"></div>
         </div>
 
         <!-- Side panels -->
@@ -1274,16 +1274,33 @@ function _renderNextMatch(nm) {
 
 function _renderStandings(arr) {
   const sb = document.getElementById('standings-body');
-  if (!arr || !arr.length) { sb.innerHTML='<div style="font-family:\'Share Tech Mono\',monospace;font-size:10px;color:var(--text3);padding:8px;">Ingen tabelldata</div>'; return; }
-  sb.innerHTML = arr.map(s => `
-    <div class="standing-row" ${s.withdrawn?'style="opacity:0.35;text-decoration:line-through"':''}>
-      <div class="standing-pos ${s.us?'us':''}">${s.pos}</div>
-      <div class="standing-name ${s.us?'us':''}" style="font-size:11px">${s.name}</div>
-      <div class="standing-record">
-        <span class="w">${s.w}V</span><span class="l"> ${s.l}T</span>
-        ${s.p!==undefined?`<span style="color:var(--text2);margin-left:4px">${s.p}p</span>`:''}
-      </div>
-    </div>`).join('');
+  if (!arr || !arr.length) {
+    sb.innerHTML = '<div style="font-family:\'Share Tech Mono\',monospace;font-size:10px;color:var(--text3);padding:8px;">Ingen tabelldata</div>';
+    return;
+  }
+  sb.innerHTML = `
+    <table style="width:100%;border-collapse:collapse;">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border);">
+          <th style="text-align:left;padding:5px 4px 5px 8px;font-family:'Share Tech Mono',monospace;font-size:9px;font-weight:400;color:var(--text3);width:24px;">#</th>
+          <th style="text-align:left;padding:5px 4px;font-family:'Share Tech Mono',monospace;font-size:9px;font-weight:400;color:var(--text3);">Lag</th>
+          <th style="text-align:center;padding:5px 4px;font-family:'Share Tech Mono',monospace;font-size:9px;font-weight:400;color:var(--green);width:28px;">V</th>
+          <th style="text-align:center;padding:5px 4px;font-family:'Share Tech Mono',monospace;font-size:9px;font-weight:400;color:var(--red);width:28px;">T</th>
+          <th style="text-align:center;padding:5px 8px 5px 4px;font-family:'Share Tech Mono',monospace;font-size:9px;font-weight:400;color:var(--text3);width:28px;">P</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${arr.map(s => `
+          <tr style="border-bottom:1px solid var(--border);${s.withdrawn ? 'opacity:0.35;' : ''}${s.us ? 'background:var(--orange-dim);' : ''}">
+            <td style="padding:7px 4px 7px 8px;font-family:'Share Tech Mono',monospace;font-size:10px;color:${s.us ? 'var(--orange)' : 'var(--text3)'};">${s.pos}</td>
+            <td style="padding:7px 4px;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:${s.us ? '700' : '600'};letter-spacing:0.03em;color:${s.us ? 'var(--orange)' : 'var(--text)'};${s.withdrawn ? 'text-decoration:line-through;' : ''}white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px;">${s.name}</td>
+            <td style="text-align:center;padding:7px 4px;font-family:'Share Tech Mono',monospace;font-size:10px;color:${s.w > 0 ? 'var(--green)' : 'var(--text3)'};">${s.w}</td>
+            <td style="text-align:center;padding:7px 4px;font-family:'Share Tech Mono',monospace;font-size:10px;color:${s.l > 0 ? 'var(--red)' : 'var(--text3)'};">${s.l}</td>
+            <td style="text-align:center;padding:7px 8px 7px 4px;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:${s.us ? 'var(--orange)' : s.p > 0 ? 'var(--text)' : 'var(--text3)'};">${s.p}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>`;
 }
 
 function renderMapStats() {
@@ -1291,23 +1308,34 @@ function renderMapStats() {
   if (!grid) return;
   grid.innerHTML = KARTOVERSIKT.map(m => {
     const played = m.total > 0;
-    const pctColor = m.pct === null ? 'var(--text3)' : m.pct === 100 ? 'var(--green)' : m.pct >= 50 ? 'var(--orange)' : 'var(--red)';
-    const pctLabel = m.pct === null ? '–' : m.pct + '%';
-    const diffColor = m.diff && m.diff.startsWith('+') ? 'var(--green)' : m.diff && m.diff.startsWith('-') ? 'var(--red)' : 'var(--text3)';
+    const vraket = !played && m.vraket > 0;
+
+    // Farge: grønn hvis spilt og vunnet, rød hvis spilt og tapt, grå hvis vraket/ikke spilt
+    const pctColor = played
+      ? (m.pct === 100 ? 'var(--green)' : m.pct >= 50 ? 'var(--orange)' : 'var(--red)')
+      : 'var(--text3)';
+    const pctLabel = played ? m.pct + '%' : (vraket ? 'Vraket' : '–');
+    const diffColor = !played ? 'var(--text3)'
+      : m.diff && m.diff.startsWith('+') ? 'var(--green)'
+      : m.diff && m.diff.startsWith('-') ? 'var(--red)'
+      : 'var(--text3)';
+
     return `
-      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:4px;padding:12px 12px 10px;position:relative;overflow:hidden;">
-        <div style="position:absolute;top:0;left:0;right:0;height:2px;background:${pctColor};opacity:${played?'0.7':'0.2'}"></div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:4px;padding:12px 12px 10px;position:relative;overflow:hidden;opacity:${vraket ? '0.55' : '1'};">
+        <div style="position:absolute;top:0;left:0;right:0;height:2px;background:${pctColor};opacity:${played ? '0.7' : '0.25'}"></div>
         <div style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--text);margin-bottom:6px;">${m.name}</div>
-        <div style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:800;color:${pctColor};line-height:1;margin-bottom:6px;">${pctLabel}</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:${vraket ? '13px' : '26px'};font-weight:${vraket ? '500' : '800'};color:${pctColor};line-height:1;margin-bottom:6px;letter-spacing:${vraket?'0.04em':'0'};">${pctLabel}</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;">
           <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text3);">Seier</div>
-          <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--green);">${m.w}</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:${played && m.w > 0 ? 'var(--green)' : 'var(--text3)'};">${m.w}</div>
           <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text3);">Tap</div>
-          <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:${m.l>0?'var(--red)':'var(--text3)'};">${m.l}</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:${played && m.l > 0 ? 'var(--red)' : 'var(--text3)'};">${m.l}</div>
           <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text3);">Runde +/-</div>
           <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:${diffColor};">${played ? m.diff : '–'}</div>
+          ${vraket ? `
           <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text3);">Vraket</div>
-          <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:${m.vraket>0?'var(--red)':'var(--text3)'};">${m.vraket}</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text3);">${m.vraket}x</div>
+          ` : ''}
         </div>
       </div>`;
   }).join('');
