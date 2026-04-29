@@ -44,7 +44,24 @@
   --c-mek: #9b7fd4;
 }
 
-/* ── GLOBAL ── */
+/* ── LIGHT MODE ── */
+html.light {
+  --bg:        #f0f2f5;
+  --bg2:       #ffffff;
+  --bg3:       #e8ecf2;
+  --bg4:       #dde3ed;
+  --border:    #c8d0de;
+  --border2:   #a8b4c8;
+  --text:      #1a2035;
+  --text2:     #4a5878;
+  --text3:     #8494b0;
+  --orange-dim:#fef3e2;
+  --blue-dim:  #e8f0f8;
+  --green-dim: #e8f5ee;
+  --red-dim:   #faeaea;
+  --purple-dim:#f0ecfa;
+  --pink-dim:  #faeaf3;
+}
 body {
   font-family: 'Barlow', sans-serif;
   background: var(--bg);
@@ -857,6 +874,7 @@ body::before {
   </div>
 
   <div class="topbar-right">
+    <button id="theme-toggle" onclick="toggleTheme()" title="Bytt tema" style="background:none;border:1px solid var(--border);border-radius:3px;padding:4px 10px;cursor:pointer;font-size:14px;line-height:1;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--orange)'" onmouseout="this.style.borderColor='var(--border)'">☀</button>
     <div class="live-dot"></div>
     <span id="clock">--:--:--</span>
     <span>// SEASON 2026</span>
@@ -910,12 +928,6 @@ body::before {
           <div class="page-title">Kamp<span class="accent">program</span></div>
           <div class="page-subtitle">// Komplettligaen CS2 · 5. div avd. A · Vår 2026</div>
         </div>
-        <div style="display:flex;align-items:center;gap:12px;">
-          <div id="fetch-status" style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text3);letter-spacing:0.06em;"></div>
-          <button id="refresh-btn" onclick="loadLiveData()" style="background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:6px 14px;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--text2);cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--orange)';this.style.color='var(--orange)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'">
-            ↺ Oppdater
-          </button>
-        </div>
       </div>
 
       <!-- Season stats -->
@@ -961,7 +973,7 @@ body::before {
           <!-- Next match box -->
           <div class="next-match-box" id="next-match-box">
             <div class="next-when" id="next-when">Laster...</div>
-            <div class="next-vs" id="next-vs">-- <span class="vs">vs</span> --</div>
+            <div id="next-vs" style="margin:6px 0 10px;line-height:1.15;"></div>
             <div class="countdown" id="countdown">
               <div class="cd-unit"><div class="cd-num" id="cd-d">00</div><div class="cd-label">Dager</div></div>
               <div class="cd-unit"><div class="cd-num" id="cd-h">00</div><div class="cd-label">Timer</div></div>
@@ -969,7 +981,7 @@ body::before {
               <div class="cd-unit"><div class="cd-num" id="cd-s">00</div><div class="cd-label">Sek</div></div>
             </div>
             <div class="next-map-pool" id="next-maps">Kartpool: TBD</div>
-            <a id="next-match-link" href="#" target="_blank" style="margin-top:10px;font-family:'Share Tech Mono',monospace;font-size:10px;color:#000;letter-spacing:0.06em;text-decoration:none;border-radius:2px;padding:8px 12px;display:flex;align-items:center;justify-content:center;gap:6px;background:var(--orange);font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;transition:background 0.15s;" onmouseover="this.style.background='#ff6a00'" onmouseout="this.style.background='var(--orange)'">
+            <a id="next-match-link" href="#" target="_blank" style="margin-top:10px;text-decoration:none;border-radius:2px;padding:9px 12px;display:flex;align-items:center;justify-content:center;gap:6px;background:var(--orange);font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#000;transition:background 0.15s;" onmouseover="this.style.background='#ff6a00'" onmouseout="this.style.background='var(--orange)'">
               ↗ SE KAMP PÅ GAMER.NO
             </a>
           </div>
@@ -1224,8 +1236,12 @@ function renderStrats() {
    ══════════════════════════════════════════ */
 function _renderNextMatch(nm) {
   if (!nm) return;
-  document.getElementById('next-vs').innerHTML =
-    `<span class="us">Fjærkrebandittene</span><span class="vs">vs</span>${nm.opponent || '???'}`;
+  // Stack layout: our team / vs / opponent — never overflows
+  document.getElementById('next-vs').innerHTML = `
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;color:var(--orange);">Fjærkrebandittene</div>
+    <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text3);letter-spacing:0.12em;margin:3px 0;">VS</div>
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;color:var(--text);">${nm.opponent || '???'}</div>
+  `;
 
   let dateStr = nm.date || '';
   if (nm.date && /^\d{4}-\d{2}-\d{2}/.test(nm.date)) {
@@ -1399,6 +1415,13 @@ function setSidebarActive(el) {
   el.classList.add('active');
 }
 
+function toggleTheme() {
+  const isLight = document.documentElement.classList.toggle('light');
+  const btn = document.getElementById('theme-toggle');
+  if (btn) btn.textContent = isLight ? '🌙' : '☀';
+  try { localStorage.setItem('fkb-theme', isLight ? 'light' : 'dark'); } catch(e) {}
+}
+
 function updateClock() {
   const el = document.getElementById('clock');
   if (el) el.textContent = new Date().toLocaleTimeString('no-NO');
@@ -1410,6 +1433,14 @@ updateClock();
    INIT
    ══════════════════════════════════════════ */
 (function init() {
+  // Restore theme preference
+  try {
+    if (localStorage.getItem('fkb-theme') === 'light') {
+      document.documentElement.classList.add('light');
+      const btn = document.getElementById('theme-toggle');
+      if (btn) btn.textContent = '🌙';
+    }
+  } catch(e) {}
   try { renderStrats(); } catch(e) { console.error('renderStrats:', e); }
   try { loadLiveData(); } catch(e) { console.error('loadLiveData:', e); }
 })();
