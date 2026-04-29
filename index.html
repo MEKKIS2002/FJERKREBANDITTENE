@@ -1386,6 +1386,14 @@ function showDebugPanel(resData, upData, stData) {
 
 
 
+function renderKamperFallback() {
+  document.getElementById('played-list').innerHTML =
+    '<div style="font-family:\'Share Tech Mono\',monospace;font-size:11px;color:var(--text3);padding:20px;text-align:center;border:1px dashed var(--border);border-radius:4px;line-height:2;">Klarte ikke hente data fra gamer.no.<br>Sjekk at Worker er deployet og prøv igjen.</div>';
+  document.getElementById('upcoming-list').innerHTML = '';
+  _renderNextMatch({ opponent:'???', date:'2026-04-30', time:'20:00', matchUrl:'https://www.gamer.no/turneringer/komplettligaen-counter-strike-varen-2026/13835/kamp/256224' });
+  renderStandingsFallback();
+}
+
 function renderStandingsFallback() {
   // Vis tabellen fra screenshot - manuelt innskrevet
   const standingsFromScreenshot = [
@@ -1726,15 +1734,40 @@ setInterval(updateClock, 1000);
 updateClock();
 
 /* ═══════════════════════════════════════════
-   INIT + AUTH
-   Alt kjøres når DOM er klar.
+   AUTH + INIT
+   Ren JS — ingen crypto.subtle, ingen DOMContentLoaded-race.
    ═══════════════════════════════════════════ */
-const _h = 'cd5fc2cef51493b3e6ed0b4954089ecea08f9858c690698847d6f53cbab00d1f';
 
-async function _sha256(str) {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
-  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+/* Kompakt SHA-256 i ren JS — fungerer overalt (file://, http, https) */
+function _sha256(s) {
+  function rr(v,a){return(v>>>a)|(v<<(32-a));}
+  var M=Math.pow,X=4294967296,i,j,r='',W=[],h,k,p=2,c={};
+  h=[]; k=[];
+  for(;p<313;p++){if(!c[p]){for(i=0;i<313;i+=p)c[i]=p;h[k.length]=M(p,.5)*X|0;k[k.length]=M(p,1/3)*X|0;}}
+  h=h.slice(0,8); k=k.slice(0,64);
+  s+='\x80';
+  while(s.length%64!==56)s+='\x00';
+  var bits=arguments[0].length*8;
+  for(i=0;i<s.length;i++){j=s.charCodeAt(i);W[i>>2]|=j<<((3-i%4)*8);}
+  W[W.length]=(bits/X)|0; W[W.length]=bits;
+  for(j=0;j<W.length;){
+    var w=W.slice(j,j+=16),oh=h.slice(0);
+    h=h.slice(0,8);
+    for(i=0;i<64;i++){
+      var w15=w[i-15],w2=w[i-2];
+      var a=h[0],e=h[4];
+      var t1=h[7]+(rr(e,6)^rr(e,11)^rr(e,25))+((e&h[5])^(~e&h[6]))+k[i]+
+        (w[i]=i<16?w[i]:(w[i-16]+(rr(w15,7)^rr(w15,18)^(w15>>>3))+w[i-7]+(rr(w2,17)^rr(w2,19)^(w2>>>10)))|0);
+      var t2=(rr(a,2)^rr(a,13)^rr(a,22))+((a&h[1])^(a&h[2])^(h[1]&h[2]));
+      h=[(t1+t2)|0,a,h[1],h[2],(h[3]+t1)|0,e,h[5],h[6]];
+    }
+    h=h.map(function(x,i){return(x+oh[i])|0;});
+  }
+  h.forEach(function(e){for(i=0;i<4;i++)r+=((e>>>(24-i*8))&255).toString(16).padStart(2,'0');});
+  return r;
 }
+
+const _h = 'cd5fc2cef51493b3e6ed0b4954089ecea08f9858c690698847d6f53cbab00d1f';
 
 function _unlock() {
   document.getElementById('pw-gate').style.display = 'none';
@@ -1742,12 +1775,12 @@ function _unlock() {
   loadLiveData();
 }
 
-async function _checkPw() {
+function _checkPw() {
   const input = document.getElementById('pw-input');
   const err   = document.getElementById('pw-err');
   const val   = input.value;
   if (!val) return;
-  const hash = await _sha256(val);
+  const hash = _sha256(val);
   if (hash === _h) {
     sessionStorage.setItem('_fkb_ok', '1');
     _unlock();
@@ -1755,24 +1788,24 @@ async function _checkPw() {
     err.textContent = 'Feil passord.';
     input.value = '';
     input.classList.add('error');
-    setTimeout(() => { input.classList.remove('error'); err.textContent = ''; }, 1200);
+    setTimeout(function(){ input.classList.remove('error'); err.textContent = ''; }, 1200);
   }
 }
 
-document.addEventListener('DOMContentLoaded', function () {
-  renderStrats();
-  renderKamper();
+/* Init — script er sist i <body>, DOM er garantert klar */
+(function init() {
+  try { renderStrats(); } catch(e) { console.error('renderStrats:', e); }
+  try { renderKamper(); } catch(e) { console.error('renderKamper:', e); }
 
-  document.getElementById('pw-btn').addEventListener('click', _checkPw);
-  document.getElementById('pw-input').addEventListener('keydown', e => {
-    if (e.key === 'Enter') _checkPw();
-  });
+  var btn = document.getElementById('pw-btn');
+  var inp = document.getElementById('pw-input');
+  if (btn) btn.addEventListener('click', _checkPw);
+  if (inp) inp.addEventListener('keydown', function(e){ if(e.key==='Enter') _checkPw(); });
+  inp && inp.focus();
 
-  // Allerede innlogget denne sesjonen → gå rett inn
-  if (sessionStorage.getItem('_fkb_ok') === '1') {
-    _unlock();
-  }
-});
+  if (sessionStorage.getItem('_fkb_ok') === '1') _unlock();
+})();
+
 
 </script>
 </body>
