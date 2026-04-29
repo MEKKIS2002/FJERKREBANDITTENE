@@ -966,8 +966,8 @@ body::before {
               <div class="cd-unit"><div class="cd-num" id="cd-s">00</div><div class="cd-label">Sek</div></div>
             </div>
             <div class="next-map-pool" id="next-maps">Kartpool: TBD</div>
-            <a id="next-match-link" href="#" target="_blank" style="display:none;margin-top:10px;font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--orange);letter-spacing:0.06em;text-decoration:none;border:1px solid var(--orange-dim);border-radius:2px;padding:6px 10px;display:flex;align-items:center;gap:6px;transition:background 0.15s;" onmouseover="this.style.background='var(--orange-dim)'" onmouseout="this.style.background='transparent'">
-              <span style="font-size:8px;">&#9654;</span> SE KAMPSIDE PÅ GAMER.NO
+            <a id="next-match-link" href="#" target="_blank" style="margin-top:10px;font-family:'Share Tech Mono',monospace;font-size:10px;color:#000;letter-spacing:0.06em;text-decoration:none;border-radius:2px;padding:8px 12px;display:flex;align-items:center;justify-content:center;gap:6px;background:var(--orange);font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;transition:background 0.15s;" onmouseover="this.style.background='#ff6a00'" onmouseout="this.style.background='var(--orange)'">
+              ↗ SE KAMP PÅ GAMER.NO
             </a>
           </div>
 
@@ -1006,12 +1006,9 @@ body::before {
    ═════════════════════════════════════════ */
 const WORKER_URL = 'https://fjerkrebandittene.marcus-aas-mekiassen.workers.dev';
 
-/* Gamer.no URL-er — disse endres ikke */
-const URLS = {
-  results:  'https://www.gamer.no/lag/fjaerkrebandittene-cs2/211067/resultater',
-  upcoming: 'https://www.gamer.no/lag/fjaerkrebandittene-cs2/211067/kamper',
-  standings:'https://www.gamer.no/turneringer/komplettligaen-counter-strike-varen-2026/13835/plasseringer',
-};
+/* Gamer.no — én side har alt: tabell, kamper, resultater */
+const TEAM_URL = 'https://www.gamer.no/turneringer/komplettligaen-counter-strike-varen-2026/13835/lag/211067';
+const NEXT_MATCH_URL = 'https://www.gamer.no/turneringer/komplettligaen-counter-strike-varen-2026/13835/kamp/256224';
 
 const OUR_TEAM = 'Fjærkrebandittene';
 const OUR_TEAM_LC = 'fjærkrebandittene';
@@ -1204,37 +1201,111 @@ function setStatus(msg, color) {
   if (el) { el.textContent = msg; el.style.color = color || 'var(--text3)'; }
 }
 
+/* ══════════════════════════════════════════
+   LIVE DATA — henter alt fra én side
+   ══════════════════════════════════════════ */
+
+/* Ord som IKKE er lagnavn (nav-elementer, norske ord, etc.) */
+const NOISE_WORDS = new Set([
+  'anmeldelser','resultater','kamper','spillere','tabell','plasseringer',
+  'turneringer','nyheter','forum','lag','kamp','logg','inn','registrer',
+  'hjem','sport','esport','cs2','counter-strike','csgo','bo2','bo3',
+  'serie','runde','gruppe','vinnere','finalespill','kvalifisering',
+  'vs','mot','poeng','spilt','vunnet','tapt','uavgjort','differanse',
+  'søk','meny','navigasjon','lenker','kontakt','om','vilkår',
+]);
+
+function isValidTeamName(str) {
+  if (!str || str.length < 3 || str.length > 60) return false;
+  if (/^\d/.test(str)) return false;           // starter med tall
+  if (/^\W+$/.test(str)) return false;          // bare symboler
+  if (/^[\d\s\-:+]+$/.test(str)) return false; // bare tall/score
+  if (NOISE_WORDS.has(str.toLowerCase())) return false;
+  if (str.toLowerCase() === OUR_TEAM_LC) return false;
+  // Må inneholde minst én bokstav
+  if (!/[a-zæøåA-ZÆØÅ]/.test(str)) return false;
+  return true;
+}
+
 async function loadLiveData() {
   setStatus('Henter data...', 'var(--orange)');
   const btn = document.getElementById('refresh-btn');
   if (btn) btn.disabled = true;
 
   try {
-    // Hent JSON fra Worker (parallelt)
-    const [resData, upData, stData] = await Promise.all([
-      proxyFetch(URLS.results),
-      proxyFetch(URLS.upcoming),
-      proxyFetch(URLS.standings),
-    ]);
+    const data = await proxyFetch(TEAM_URL);
+    window._dbg = data;
 
-    // Debug: lagre rådata for inspeksjon
-    window._dbg = { resData, upData, stData };
+    const lines = (data.pageText || '').split('\n').map(l => l.trim()).filter(Boolean);
 
-    liveData.results   = parseResults(resData);
-    liveData.upcoming  = parseUpcoming(upData);
-    liveData.standings = parseStandings(stData);
+    // ── Parse spillte kamper ──
+    const results = [];
+    const seenResults = new Set();
+    for (let i = 0; i < lines.length; i++) {
+      if (!lines[i].toLowerCase().includes(OUR_TEAM_LC)) continue;
+      const win = lines.slice(Math.max(0, i-8), Math.min(lines.length, i+9));
+      const ctx = win.join(' ');
+      // Resultat-score: 2-0, 2-1, 0-2, 1-2
+      const sm = ctx.match(/\b([012])\s*[–\-]\s*([012])\b/);
+      if (!sm) continue;
+      const su = parseInt(sm[1]), st = parseInt(sm[2]);
+      if (su === 0 && st === 0) continue;
+      let opponent = null;
+      for (const line of win) {
+        if (isValidTeamName(line)) { opponent = line; break; }
+      }
+      if (!opponent) continue;
+      const key = opponent.toLowerCase() + su + st;
+      if (seenResults.has(key)) continue;
+      seenResults.add(key);
+      const result = su > st ? 'win' : su < st ? 'loss' : 'draw';
+      // Finn kamp-URL fra kampLinks
+      const matchUrl = (data.kampLinks || []).find(l => !results.some(r => r.matchUrl === l)) || null;
+      results.push({ opponent, scoreUs: su, scoreThem: st, result, maps: [], matchUrl });
+    }
+
+    // ── Parse kommende kamper ──
+    const upcoming = [];
+    const seenUp = new Set();
+    for (let i = 0; i < lines.length; i++) {
+      if (!lines[i].toLowerCase().includes(OUR_TEAM_LC)) continue;
+      const win = lines.slice(Math.max(0, i-8), Math.min(lines.length, i+9));
+      const ctx = win.join(' ');
+      if (/\b[12]\s*[–\-]\s*[012]\b/.test(ctx)) continue; // har score = resultat
+      let opponent = null;
+      for (const line of win) {
+        if (isValidTeamName(line)) { opponent = line; break; }
+      }
+      if (!opponent) continue;
+      if (seenUp.has(opponent.toLowerCase())) continue;
+      if (seenResults.has(opponent.toLowerCase() + '00') || results.some(r => r.opponent.toLowerCase() === opponent.toLowerCase())) continue;
+      seenUp.add(opponent.toLowerCase());
+      // Finn dato
+      const dateMatch = ctx.match(/(\d{1,2})[.\s]+(januar|februar|mars|april|mai|juni|juli|august|september|oktober|november|desember)/i);
+      const timeMatch = ctx.match(/\b(\d{2}:\d{2})\b/);
+      // Finn kamp-URL
+      const matchUrl = (data.kampLinks || []).find(l => !upcoming.some(u => u.matchUrl === l) && !results.some(r => r.matchUrl === l)) || NEXT_MATCH_URL;
+      upcoming.push({
+        opponent,
+        date: dateMatch ? dateMatch[0] : null,
+        time: timeMatch ? timeMatch[1] : '20:00',
+        matchUrl,
+        result: 'upcoming', maps: []
+      });
+    }
+
+    // ── Parse tabell ──
+    const standings = parseStandings(data);
+
+    liveData.results   = results;
+    liveData.upcoming  = upcoming;
+    liveData.standings = standings;
 
     const now = new Date().toLocaleTimeString('no-NO', { hour: '2-digit', minute: '2-digit' });
-    const gotResults  = liveData.results.length;
-    const gotUpcoming = liveData.upcoming.length;
-    const gotStandings = liveData.standings ? liveData.standings.length : 0;
+    setStatus(`Oppdatert ${now} · ${results.length} res, ${upcoming.length} kom, ${standings ? standings.length : 0} tab`, 'var(--green)');
 
-    setStatus(`Oppdatert ${now} · ${gotResults} res, ${gotUpcoming} kom, ${gotStandings} tab`, 'var(--green)');
-
-    // Vis debug-panel hvis ingenting ble parsert
-    if (gotResults === 0 && gotUpcoming === 0 && gotStandings === 0) {
-      setStatus(`Oppdatert ${now} — parsing fant ingenting. Trykk DEBUG.`, 'var(--yellow)');
-      showDebugPanel(resData, upData, stData);
+    if (!results.length && !upcoming.length && !standings) {
+      showDebugPanel(data, data, data);
     }
 
     renderKamper();
@@ -1292,7 +1363,7 @@ function renderKamperFallback() {
   document.getElementById('played-list').innerHTML =
     '<div style="font-family:\'Share Tech Mono\',monospace;font-size:11px;color:var(--text3);padding:20px;text-align:center;border:1px dashed var(--border);border-radius:4px;line-height:2;">Klarte ikke hente data fra gamer.no.<br>Sjekk at Worker er deployet og prøv igjen.</div>';
   document.getElementById('upcoming-list').innerHTML = '';
-  _renderNextMatch({ opponent:'???', date:'2026-04-30', time:'20:00', matchUrl:'https://www.gamer.no/turneringer/komplettligaen-counter-strike-varen-2026/13835/kamp/256224' });
+  _renderNextMatch({ opponent:'???', date:'2026-04-30', time:'20:00', matchUrl: NEXT_MATCH_URL });
   renderStandingsFallback();
 }
 
@@ -1423,35 +1494,29 @@ function _renderNextMatch(nm) {
     <span class="vs">vs</span>
     ${nm.opponent || '???'}
   `;
-  // Parse date
-  let dateStr = '';
-  if (nm.date) {
+  let dateStr = nm.date || '';
+  if (nm.date && nm.date.match(/^\d{4}-\d{2}-\d{2}/)) {
     try {
-      const d = nm.date.includes('T') ? new Date(nm.date) : new Date(nm.date + 'T00:00:00');
-      dateStr = isNaN(d) ? nm.date : d.toLocaleDateString('no-NO',{weekday:'long',day:'2-digit',month:'long'});
-    } catch(e) { dateStr = nm.date; }
+      const d = new Date(nm.date + 'T00:00:00');
+      if (!isNaN(d)) dateStr = d.toLocaleDateString('no-NO',{weekday:'long',day:'2-digit',month:'long'});
+    } catch(e) {}
   }
   document.getElementById('next-when').textContent = (dateStr || '???') + ' // ' + (nm.time || '??:??');
   document.getElementById('next-maps').textContent = nm.mapPool && nm.mapPool.length
-    ? 'Kartpool: ' + nm.mapPool.join(' · ')
-    : 'Kartpool: TBD';
+    ? 'Kartpool: ' + nm.mapPool.join(' · ') : 'Kartpool: TBD';
 
-  // Match link
+  // Alltid vis kamplenke (bruker NEXT_MATCH_URL som fallback)
+  const url = nm.matchUrl || NEXT_MATCH_URL;
   const linkEl = document.getElementById('next-match-link');
-  if (nm.matchUrl) {
-    linkEl.href = nm.matchUrl;
-    linkEl.style.display = 'flex';
-  } else {
-    linkEl.style.display = 'none';
-  }
+  linkEl.href = url;
+  linkEl.style.display = 'flex';
 
   // Countdown
   if (_countdownInterval) clearInterval(_countdownInterval);
   let targetDate;
   try {
-    const datepart = (nm.date || '').substring(0,10);
-    const timepart = nm.time || '20:00';
-    targetDate = new Date(`${datepart}T${timepart}:00`);
+    const dp = (nm.date || '').match(/^\d{4}-\d{2}-\d{2}/) ? nm.date.substring(0,10) : '2026-04-30';
+    targetDate = new Date(dp + 'T' + (nm.time || '20:00') + ':00');
   } catch(e) {}
 
   function tick() {
@@ -1459,8 +1524,7 @@ function _renderNextMatch(nm) {
     const diff = targetDate - new Date();
     if (diff <= 0) {
       ['cd-d','cd-h','cd-m','cd-s'].forEach(id => document.getElementById(id).textContent = '00');
-      clearInterval(_countdownInterval);
-      return;
+      clearInterval(_countdownInterval); return;
     }
     document.getElementById('cd-d').textContent = String(Math.floor(diff/86400000)).padStart(2,'0');
     document.getElementById('cd-h').textContent = String(Math.floor((diff%86400000)/3600000)).padStart(2,'0');
@@ -1603,7 +1667,7 @@ function renderKamper() {
     opponent: '???',
     date: '2026-04-30',
     time: '20:00',
-    matchUrl: 'https://www.gamer.no/turneringer/komplettligaen-counter-strike-varen-2026/13835/kamp/256224',
+    matchUrl: NEXT_MATCH_URL,
   };
   _renderNextMatch(nextMatch);
 }
