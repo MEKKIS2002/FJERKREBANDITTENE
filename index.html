@@ -1735,39 +1735,14 @@ updateClock();
 
 /* ═══════════════════════════════════════════
    AUTH + INIT
-   Ren JS — ingen crypto.subtle, ingen DOMContentLoaded-race.
    ═══════════════════════════════════════════ */
 
-/* Kompakt SHA-256 i ren JS — fungerer overalt (file://, http, https) */
-function _sha256(s) {
-  function rr(v,a){return(v>>>a)|(v<<(32-a));}
-  var M=Math.pow,X=4294967296,i,j,r='',W=[],h,k,p=2,c={};
-  h=[]; k=[];
-  for(;p<313;p++){if(!c[p]){for(i=0;i<313;i+=p)c[i]=p;h[k.length]=M(p,.5)*X|0;k[k.length]=M(p,1/3)*X|0;}}
-  h=h.slice(0,8); k=k.slice(0,64);
-  s+='\x80';
-  while(s.length%64!==56)s+='\x00';
-  var bits=arguments[0].length*8;
-  for(i=0;i<s.length;i++){j=s.charCodeAt(i);W[i>>2]|=j<<((3-i%4)*8);}
-  W[W.length]=(bits/X)|0; W[W.length]=bits;
-  for(j=0;j<W.length;){
-    var w=W.slice(j,j+=16),oh=h.slice(0);
-    h=h.slice(0,8);
-    for(i=0;i<64;i++){
-      var w15=w[i-15],w2=w[i-2];
-      var a=h[0],e=h[4];
-      var t1=h[7]+(rr(e,6)^rr(e,11)^rr(e,25))+((e&h[5])^(~e&h[6]))+k[i]+
-        (w[i]=i<16?w[i]:(w[i-16]+(rr(w15,7)^rr(w15,18)^(w15>>>3))+w[i-7]+(rr(w2,17)^rr(w2,19)^(w2>>>10)))|0);
-      var t2=(rr(a,2)^rr(a,13)^rr(a,22))+((a&h[1])^(a&h[2])^(h[1]&h[2]));
-      h=[(t1+t2)|0,a,h[1],h[2],(h[3]+t1)|0,e,h[5],h[6]];
-    }
-    h=h.map(function(x,i){return(x+oh[i])|0;});
-  }
-  h.forEach(function(e){for(i=0;i<4;i++)r+=((e>>>(24-i*8))&255).toString(16).padStart(2,'0');});
-  return r;
+/* Passordverifisering — fungerer på file://, http og https */
+const _k = 'eWFncmVldGllcg==';
+function _verify(pw) {
+  try { return btoa(pw.split('').reverse().join('')) === _k; }
+  catch(e) { return false; }
 }
-
-const _h = 'cd5fc2cef51493b3e6ed0b4954089ecea08f9858c690698847d6f53cbab00d1f';
 
 function _unlock() {
   document.getElementById('pw-gate').style.display = 'none';
@@ -1776,12 +1751,11 @@ function _unlock() {
 }
 
 function _checkPw() {
-  const input = document.getElementById('pw-input');
-  const err   = document.getElementById('pw-err');
-  const val   = input.value;
+  var input = document.getElementById('pw-input');
+  var err   = document.getElementById('pw-err');
+  var val   = input.value;
   if (!val) return;
-  const hash = _sha256(val);
-  if (hash === _h) {
+  if (_verify(val)) {
     sessionStorage.setItem('_fkb_ok', '1');
     _unlock();
   } else {
@@ -1801,10 +1775,11 @@ function _checkPw() {
   var inp = document.getElementById('pw-input');
   if (btn) btn.addEventListener('click', _checkPw);
   if (inp) inp.addEventListener('keydown', function(e){ if(e.key==='Enter') _checkPw(); });
-  inp && inp.focus();
+  if (inp) inp.focus();
 
   if (sessionStorage.getItem('_fkb_ok') === '1') _unlock();
 })();
+
 
 
 </script>
