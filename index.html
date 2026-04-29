@@ -763,31 +763,57 @@ body::before {
 .side-panel-body { padding: 12px 14px; }
 
 .standing-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 22px 1fr 22px 22px 22px 22px 30px 24px;
   align-items: center;
-  gap: 8px;
-  padding: 6px 0;
+  gap: 4px;
+  padding: 5px 0;
   border-bottom: 1px solid var(--border);
-  font-size: 12px;
+  font-size: 11px;
 }
 .standing-row:last-child { border-bottom: none; }
-.standing-pos {
+.standing-row.withdrawn { opacity: 0.35; text-decoration: line-through; }
+.standing-header {
+  display: grid;
+  grid-template-columns: 22px 1fr 22px 22px 22px 22px 30px 24px;
+  gap: 4px;
+  padding: 4px 0 6px;
+  border-bottom: 1px solid var(--border2);
   font-family: 'Share Tech Mono', monospace;
-  font-size: 10px;
+  font-size: 8px;
+  letter-spacing: 0.1em;
   color: var(--text3);
-  width: 16px;
+  text-transform: uppercase;
+}
+.standing-cell {
   text-align: center;
-}
-.standing-pos.us { color: var(--orange); }
-.standing-name { flex: 1; font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 600; letter-spacing: 0.04em; color: var(--text2); }
-.standing-name.us { color: var(--orange); }
-.standing-record {
   font-family: 'Share Tech Mono', monospace;
   font-size: 10px;
   color: var(--text3);
 }
-.standing-record .w { color: var(--green); }
-.standing-record .l { color: var(--red); }
+.standing-cell.pos { color: var(--text3); }
+.standing-cell.pos.us { color: var(--orange); }
+.standing-cell.name {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--text2);
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.standing-cell.name.us { color: var(--orange); }
+.standing-cell.w { color: var(--green); }
+.standing-cell.l { color: var(--red); }
+.standing-cell.pts {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+.standing-cell.pts.us { color: var(--orange); }
 
 .next-match-box {
   background: var(--bg3);
@@ -980,7 +1006,13 @@ body::before {
       <div class="page-header">
         <div>
           <div class="page-title">Kamp<span class="accent">program</span></div>
-          <div class="page-subtitle">// Good Game-ligaen · CS2 · Season 2026</div>
+          <div class="page-subtitle">// Komplettligaen CS2 · 5. div avd. A · Vår 2026</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div id="fetch-status" style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text3);letter-spacing:0.06em;"></div>
+          <button id="refresh-btn" onclick="loadLiveData()" style="background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:6px 14px;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--text2);cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--orange)';this.style.color='var(--orange)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'">
+            ↺ Oppdater
+          </button>
         </div>
       </div>
 
@@ -1040,7 +1072,7 @@ body::before {
           <!-- Standings -->
           <div class="side-panel">
             <div class="side-panel-header">
-              <span>Tabellposisjon</span>
+              <span>5. divisjon avd. A</span>
               <span style="color: var(--orange);">Komplettligaen Vår 2026</span>
             </div>
             <div class="side-panel-body" id="standings-body"></div>
@@ -1066,86 +1098,344 @@ body::before {
 
 <script>
 /* ═════════════════════════════════════════
-   MATCH DATA
-   Oppdater opponent, date, time, maps manuelt
-   etter hver kamp fra:
-   gamer.no/lag/fjaerkrebandittene-cs2/211067/resultater
+   KONFIGURASJON — OPPDATER WORKER URL
+   Sett inn din Cloudflare Worker URL her.
+   Se gamer-proxy-worker.js for deploy-instrukser.
    ═════════════════════════════════════════ */
-const matches = [
-  // ── KAMP 1 (spilt — TODO: fyll inn motstander og kartnavn fra gamer.no) ──
-  {
-    id: 1,
-    date: '2026-04-??',         // TODO: sett riktig dato
-    time: '20:00',              // TODO: sett riktig tidspunkt
-    opponent: '???',            // TODO: fyll inn motstander
-    result: 'win',
-    scoreUs: 2,
-    scoreThem: 0,
-    maps: [
-      { name: '???', result: 'win', scoreUs: 16, scoreThem: 0 }, // TODO
-      { name: '???', result: 'win', scoreUs: 16, scoreThem: 0 }, // TODO
-    ],
-    matchUrl: null,             // TODO: lim inn gamer.no/kamp-URL
-    tournament: 'Komplettligaen CS2 Vår 2026',
-    format: 'Bo2'
-  },
-  // ── KAMP 2 (spilt — TODO: fyll inn motstander og kartnavn fra gamer.no) ──
-  {
-    id: 2,
-    date: '2026-04-??',         // TODO: sett riktig dato
-    time: '20:00',              // TODO: sett riktig tidspunkt
-    opponent: '???',            // TODO: fyll inn motstander
-    result: 'win',
-    scoreUs: 2,
-    scoreThem: 0,
-    maps: [
-      { name: '???', result: 'win', scoreUs: 16, scoreThem: 0 }, // TODO
-      { name: '???', result: 'win', scoreUs: 16, scoreThem: 0 }, // TODO
-    ],
-    matchUrl: null,             // TODO: lim inn gamer.no/kamp-URL
-    tournament: 'Komplettligaen CS2 Vår 2026',
-    format: 'Bo2'
-  },
+const WORKER_URL = 'https://gamer-proxy.DITT-NAVN.workers.dev'; // ← BYTT UT
 
-  /* ── KOMMENDE KAMPER ── */
-  {
-    id: 3,
-    date: '2026-04-30',         // I morgen
-    time: '20:00',              // TODO: sjekk riktig tidspunkt på gamer.no
-    opponent: '???',            // TODO: fyll inn motstander fra gamer.no/kamp/256224
-    result: 'upcoming',
-    scoreUs: null, scoreThem: null,
-    maps: [],
-    mapPool: [],                // TODO: fyll inn kartpool hvis kjent
+/* Gamer.no URL-er — disse endres ikke */
+const URLS = {
+  results:  'https://www.gamer.no/lag/fjaerkrebandittene-cs2/211067/resultater',
+  upcoming: 'https://www.gamer.no/lag/fjaerkrebandittene-cs2/211067/kamper',
+  standings:'https://www.gamer.no/turneringer/komplettligaen-counter-strike-varen-2026/13835/plasseringer',
+};
+
+const OUR_TEAM = 'Fjærkrebandittene';
+const OUR_TEAM_LC = 'fjærkrebandittene';
+
+/* ── Hjelp: hent HTML via Worker ── */
+async function proxyFetch(url) {
+  const res = await fetch(`${WORKER_URL}?url=${encodeURIComponent(url)}`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.text();
+}
+
+/* ── Parser: parseHTML til DOM ── */
+function parseHTML(html) {
+  return new DOMParser().parseFromString(html, 'text/html');
+}
+
+/* ── Parser: Tabellposisjoner ──
+   Leser alle <tr>-rader i den divisjonstabellen der Fjærkrebandittene finnes.
+   Kolonnestruktur gamer.no: # | Lag | S | V | U | T | +/- | B | P
+*/
+function parseStandings(html) {
+  const doc = parseHTML(html);
+  const results = [];
+
+  // Finn alle tabeller på siden
+  const tables = doc.querySelectorAll('table');
+  let targetTable = null;
+
+  for (const table of tables) {
+    // Sjekk om denne tabellen inneholder laget vårt
+    const text = table.textContent.toLowerCase();
+    if (text.includes(OUR_TEAM_LC)) {
+      targetTable = table;
+      break;
+    }
+  }
+
+  if (!targetTable) {
+    // Fallback: prøv å finne rader i alle elementer
+    const allRows = doc.querySelectorAll('tr');
+    for (const row of allRows) {
+      if (row.textContent.toLowerCase().includes(OUR_TEAM_LC)) {
+        targetTable = row.closest('table');
+        break;
+      }
+    }
+  }
+
+  if (!targetTable) return null;
+
+  const rows = targetTable.querySelectorAll('tr');
+  let pos = 0;
+  rows.forEach(row => {
+    const cells = row.querySelectorAll('td');
+    if (cells.length < 4) return;
+
+    // Prøv å finne lagnavn — typisk i andre celle
+    let name = '';
+    let w = 0, l = 0, played = 0, pts = 0;
+
+    // Iterer celler for å finne strenger vs tall
+    const cellTexts = Array.from(cells).map(c => c.textContent.trim());
+
+    // Prøv å identifisere hvilken celle som er lagnavn (lengst tekst)
+    const nameCell = cellTexts.find(t => t.length > 2 && isNaN(t.replace(/[+\-]/,'')));
+    if (!nameCell) return;
+
+    name = nameCell;
+    // Finn numeriske verdier: S, V, U, T, +/-, B, P
+    const nums = cellTexts.filter(t => !isNaN(t) && t !== '').map(Number);
+    if (nums.length >= 4) {
+      played = nums[0];
+      w      = nums[1];
+      // nums[2] = uavgjort
+      l      = nums[3];
+      pts    = nums[nums.length - 1];
+    }
+
+    pos++;
+    results.push({
+      pos,
+      name,
+      w,
+      l,
+      played,
+      pts,
+      us: name.toLowerCase().includes(OUR_TEAM_LC),
+    });
+  });
+
+  return results.length > 0 ? results : null;
+}
+
+/* ── Parser: Spillte kamper (resultater) ── */
+function parseResults(html) {
+  const doc = parseHTML(html);
+  const matches = [];
+
+  // gamer.no bruker typisk .match, .match-row, article, li.match e.l.
+  // Vi prøver et bredt sett med selektorer og faller tilbake på tekst-parsing
+  const candidates = [
+    ...doc.querySelectorAll('[class*="match"]'),
+    ...doc.querySelectorAll('[class*="kamp"]'),
+    ...doc.querySelectorAll('[class*="result"]'),
+    ...doc.querySelectorAll('article'),
+    ...doc.querySelectorAll('li'),
+  ];
+
+  const seen = new Set();
+
+  for (const el of candidates) {
+    const text = el.textContent;
+    if (seen.has(el)) continue;
+
+    // Se etter score-lignende mønstre: "16 - 4", "2 - 0", etc.
+    const scoreMatch = text.match(/(\d+)\s*[–\-:]\s*(\d+)/);
+    if (!scoreMatch) continue;
+
+    // Sjekk at dette elementet inneholder laget vårt
+    if (!text.toLowerCase().includes(OUR_TEAM_LC)) continue;
+
+    seen.add(el);
+
+    const scoreA = parseInt(scoreMatch[1]);
+    const scoreB = parseInt(scoreMatch[2]);
+
+    // Finn motstander — all tekst som ikke er vårt lag eller bare tall
+    const lines = text.split(/\n/).map(l => l.trim()).filter(Boolean);
+    let opponent = 'Ukjent motstander';
+    for (const line of lines) {
+      if (!line.toLowerCase().includes(OUR_TEAM_LC) &&
+          line.length > 2 && line.length < 80 &&
+          isNaN(line) && !line.match(/^\d+\s*[–\-]\s*\d+$/)) {
+        opponent = line;
+        break;
+      }
+    }
+
+    // Finn dato
+    const dateEl = el.querySelector('[class*="date"],[class*="dato"],[class*="time"]') ||
+                   el.querySelector('time');
+    let date = null;
+    if (dateEl) {
+      date = dateEl.getAttribute('datetime') || dateEl.textContent.trim();
+    }
+
+    // Finn kamplenke
+    const linkEl = el.querySelector('a[href*="/kamp/"]') || el.closest('a');
+    const matchUrl = linkEl ? 'https://www.gamer.no' + linkEl.getAttribute('href') : null;
+
+    // Bestem resultatet — forutsatt at vi er første lag i oppsettet
+    let result = 'draw';
+    if (scoreA > scoreB) result = 'win';
+    if (scoreA < scoreB) result = 'loss';
+
+    matches.push({ opponent, scoreUs: scoreA, scoreThem: scoreB, result, date, matchUrl, maps: [] });
+  }
+
+  return matches;
+}
+
+/* ── Parser: Kommende kamper ── */
+function parseUpcoming(html) {
+  const doc = parseHTML(html);
+  const matches = [];
+
+  const candidates = [
+    ...doc.querySelectorAll('[class*="match"]'),
+    ...doc.querySelectorAll('[class*="kamp"]'),
+    ...doc.querySelectorAll('[class*="fixture"]'),
+    ...doc.querySelectorAll('article'),
+    ...doc.querySelectorAll('li'),
+  ];
+
+  const seen = new Set();
+
+  for (const el of candidates) {
+    const text = el.textContent;
+    if (seen.has(el) || !text.toLowerCase().includes(OUR_TEAM_LC)) continue;
+    // Skip if it has a score (it's a result, not upcoming)
+    if (text.match(/\d+\s*[–\-]\s*\d+/)) continue;
+    seen.add(el);
+
+    // Finn motstander
+    const lines = text.split(/\n/).map(l => l.trim()).filter(Boolean);
+    let opponent = 'Ukjent motstander';
+    for (const line of lines) {
+      if (!line.toLowerCase().includes(OUR_TEAM_LC) &&
+          line.length > 2 && line.length < 80 &&
+          isNaN(line)) {
+        opponent = line;
+        break;
+      }
+    }
+
+    // Finn dato/tid
+    const dateEl = el.querySelector('[class*="date"],[class*="dato"],[class*="time"],time');
+    let date = null, time = '20:00';
+    if (dateEl) {
+      const dt = dateEl.getAttribute('datetime') || dateEl.textContent.trim();
+      date = dt;
+    }
+
+    // Finn kamplenke
+    const linkEl = el.querySelector('a[href*="/kamp/"]') || el.closest('a[href*="/kamp/"]');
+    const matchUrl = linkEl
+      ? (linkEl.getAttribute('href').startsWith('http')
+          ? linkEl.getAttribute('href')
+          : 'https://www.gamer.no' + linkEl.getAttribute('href'))
+      : null;
+
+    matches.push({ opponent, date, time, matchUrl, result: 'upcoming', maps: [] });
+  }
+
+  // Deduplisere
+  const unique = [];
+  const names = new Set();
+  for (const m of matches) {
+    const key = m.opponent + (m.date || '');
+    if (!names.has(key)) { names.add(key); unique.push(m); }
+  }
+
+  return unique;
+}
+
+/* ═══════════════ LIVE DATA LOAD ═══════════════ */
+let liveData = { results: [], upcoming: [], standings: null };
+
+function setStatus(msg, color) {
+  const el = document.getElementById('fetch-status');
+  if (el) { el.textContent = msg; el.style.color = color || 'var(--text3)'; }
+}
+
+async function loadLiveData() {
+  setStatus('Henter data...', 'var(--orange)');
+  const btn = document.getElementById('refresh-btn');
+  if (btn) btn.disabled = true;
+
+  try {
+    // Sjekk at Worker URL er satt
+    if (WORKER_URL.includes('DITT-NAVN')) {
+      setStatus('Worker URL ikke satt — se koden', 'var(--red)');
+      renderKamperFallback();
+      return;
+    }
+
+    const [resHtml, upHtml, stHtml] = await Promise.all([
+      proxyFetch(URLS.results),
+      proxyFetch(URLS.upcoming),
+      proxyFetch(URLS.standings),
+    ]);
+
+    liveData.results   = parseResults(resHtml);
+    liveData.upcoming  = parseUpcoming(upHtml);
+    liveData.standings = parseStandings(stHtml);
+
+    const now = new Date().toLocaleTimeString('no-NO', {hour:'2-digit',minute:'2-digit'});
+    setStatus(`Oppdatert ${now}`, 'var(--green)');
+    renderKamper();
+  } catch (err) {
+    console.error('Live data feil:', err);
+    setStatus('Feil: ' + err.message, 'var(--red)');
+    renderKamperFallback();
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+/* Fallback når Worker ikke er konfigurert enda */
+function renderKamperFallback() {
+  document.getElementById('played-list').innerHTML = `
+    <div style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--text3);padding:20px;text-align:center;border:1px dashed var(--border);border-radius:4px;line-height:2;">
+      Ingen live-data tilgjengelig.<br>
+      Deploy <span style="color:var(--orange)">gamer-proxy-worker.js</span> til Cloudflare Workers<br>
+      og sett <span style="color:var(--orange)">WORKER_URL</span> øverst i scriptet.
+    </div>`;
+  document.getElementById('upcoming-list').innerHTML = '';
+  // Vis kjent info om neste kamp manuelt
+  renderNextMatchManual();
+  renderStandingsFallback();
+}
+
+function renderNextMatchManual() {
+  // Hardkodet neste kamp basert på kjent URL — oppdateres av live-data når Worker er klar
+  const nm = {
+    opponent: '???',
+    date: '2026-04-30',
+    time: '20:00',
     matchUrl: 'https://www.gamer.no/turneringer/komplettligaen-counter-strike-varen-2026/13835/kamp/256224',
-    tournament: 'Komplettligaen CS2 Vår 2026',
-    format: 'Bo2',
-    isNext: true
-  },
-  // ── Legg til flere kommende kamper her ──
-  // {
-  //   id: 4, date: 'YYYY-MM-DD', time: 'HH:MM', opponent: '???',
-  //   result: 'upcoming', scoreUs: null, scoreThem: null, maps: [],
-  //   matchUrl: 'https://www.gamer.no/...',
-  //   tournament: 'Komplettligaen CS2 Vår 2026', format: 'Bo2', isNext: false
-  // },
-];
+  };
+  _renderNextMatch(nm);
+}
+
+function renderStandingsFallback() {
+  // Vis tabellen fra screenshot - manuelt innskrevet
+  const standingsFromScreenshot = [
+    { pos:1, name:'Back Breakers (CS2)',          w:2, l:0, us:false },
+    { pos:1, name:'Fjærkrebandittene (CS2)',       w:2, l:0, us:true  },
+    { pos:3, name:'GAMINGGAMERS',                 w:2, l:0, us:false },
+    { pos:4, name:'Ocean Cafe & Bar Gaming',      w:1, l:1, us:false },
+    { pos:5, name:'Klompeklattane',               w:1, l:1, us:false },
+    { pos:6, name:'VorteX (CS2)',                 w:0, l:1, us:false },
+    { pos:7, name:'IL Hei E-sport MainBoys',      w:0, l:1, us:false },
+    { pos:8, name:'99INONE',                      w:0, l:2, us:false },
+    { pos:8, name:'Gatemix E-Sport (CS2)',        w:0, l:2, us:false },
+  ];
+  _renderStandings(standingsFromScreenshot);
+}
+
+
 
 /* ═════════════════════════════════════════
-   TABELLDATA
-   Hent fra: gamer.no/turneringer/
-   komplettligaen-counter-strike-varen-2026/13835/plasseringer
-   Fyll inn kun din divisjon.
+   TABELLDATA — 5. divisjon avd. A
+   Komplettligaen CS2 Vår 2026
    ═════════════════════════════════════════ */
 const standings = [
-  // TODO: fyll inn alle lag i din divisjon fra gamer.no/plasseringer
-  // Format: { pos: 1, name: 'Lagnavn', w: 2, l: 0, us: false }
-  { pos: 1,  name: '???',                    w: 0, l: 0, us: false },
-  { pos: 2,  name: 'Fjærkrebandittene',      w: 2, l: 0, us: true  },
-  { pos: 3,  name: '???',                    w: 0, l: 0, us: false },
-  { pos: 4,  name: '???',                    w: 0, l: 0, us: false },
-  { pos: 5,  name: '???',                    w: 0, l: 0, us: false },
-  // Legg til / fjern rader etter ligastrukturen
+  { pos: 1,  name: 'Back Breakers (CS2)',       s:2, w:2, u:0, l:0, diff:'+4', p:6,  us: false },
+  { pos: 1,  name: 'Fjærkrebandittene (CS2)',   s:2, w:2, u:0, l:0, diff:'+4', p:6,  us: true  },
+  { pos: 3,  name: 'GAMINGGAMERS',              s:2, w:2, u:0, l:0, diff:'+2', p:6,  us: false },
+  { pos: 4,  name: 'Ocean Cafe & Bar Gaming',   s:2, w:1, u:0, l:1, diff:'+1', p:3,  us: false },
+  { pos: 5,  name: 'Klompeklattane',            s:2, w:1, u:0, l:1, diff:'0',  p:3,  us: false },
+  { pos: 6,  name: 'VorteX (CS2)',              s:1, w:0, u:0, l:1, diff:'-1', p:0,  us: false },
+  { pos: 7,  name: 'IL Hei E-sport MainBoys',  s:1, w:0, u:0, l:1, diff:'-2', p:0,  us: false },
+  { pos: 8,  name: '99INONE',                   s:2, w:0, u:0, l:2, diff:'-4', p:0,  us: false },
+  { pos: 8,  name: 'Gatemix E-Sport (CS2)',     s:2, w:0, u:0, l:2, diff:'-4', p:0,  us: false },
+  { pos: 10, name: 'Wen Hua 28a [trukket]',     s:0, w:0, u:0, l:0, diff:'0',  p:0,  us: false, withdrawn: true },
 ];
 
 /* ═════════════════════════════════════════
@@ -1229,160 +1519,203 @@ function renderStrats() {
   }).join('');
 }
 
+/* ═══════════════ RENDER HELPERS ═══════════════ */
+
+let _countdownInterval = null;
+
+function _renderNextMatch(nm) {
+  if (!nm) return;
+  document.getElementById('next-vs').innerHTML = `
+    <span class="us">Fjærkrebandittene</span>
+    <span class="vs">vs</span>
+    ${nm.opponent || '???'}
+  `;
+  // Parse date
+  let dateStr = '';
+  if (nm.date) {
+    try {
+      const d = nm.date.includes('T') ? new Date(nm.date) : new Date(nm.date + 'T00:00:00');
+      dateStr = isNaN(d) ? nm.date : d.toLocaleDateString('no-NO',{weekday:'long',day:'2-digit',month:'long'});
+    } catch(e) { dateStr = nm.date; }
+  }
+  document.getElementById('next-when').textContent = (dateStr || '???') + ' // ' + (nm.time || '??:??');
+  document.getElementById('next-maps').textContent = nm.mapPool && nm.mapPool.length
+    ? 'Kartpool: ' + nm.mapPool.join(' · ')
+    : 'Kartpool: TBD';
+
+  // Match link
+  const linkEl = document.getElementById('next-match-link');
+  if (nm.matchUrl) {
+    linkEl.href = nm.matchUrl;
+    linkEl.style.display = 'flex';
+  } else {
+    linkEl.style.display = 'none';
+  }
+
+  // Countdown
+  if (_countdownInterval) clearInterval(_countdownInterval);
+  let targetDate;
+  try {
+    const datepart = (nm.date || '').substring(0,10);
+    const timepart = nm.time || '20:00';
+    targetDate = new Date(`${datepart}T${timepart}:00`);
+  } catch(e) {}
+
+  function tick() {
+    if (!targetDate || isNaN(targetDate)) return;
+    const diff = targetDate - new Date();
+    if (diff <= 0) {
+      ['cd-d','cd-h','cd-m','cd-s'].forEach(id => document.getElementById(id).textContent = '00');
+      clearInterval(_countdownInterval);
+      return;
+    }
+    document.getElementById('cd-d').textContent = String(Math.floor(diff/86400000)).padStart(2,'0');
+    document.getElementById('cd-h').textContent = String(Math.floor((diff%86400000)/3600000)).padStart(2,'0');
+    document.getElementById('cd-m').textContent = String(Math.floor((diff%3600000)/60000)).padStart(2,'0');
+    document.getElementById('cd-s').textContent = String(Math.floor((diff%60000)/1000)).padStart(2,'0');
+  }
+  tick();
+  _countdownInterval = setInterval(tick, 1000);
+}
+
+function _renderStandings(standingsArr) {
+  const sb = document.getElementById('standings-body');
+  if (!standingsArr || standingsArr.length === 0) {
+    sb.innerHTML = '<div style="font-family:\'Share Tech Mono\',monospace;font-size:10px;color:var(--text3);padding:8px;">Ingen tabelldata</div>';
+    return;
+  }
+  sb.innerHTML = standingsArr.map(s => `
+    <div class="standing-row" ${s.withdrawn ? 'style="opacity:0.4;text-decoration:line-through"' : ''}>
+      <div class="standing-pos ${s.us?'us':''}">${s.pos}</div>
+      <div class="standing-name ${s.us?'us':''}" style="font-size:11px">${s.name}</div>
+      <div class="standing-record">
+        <span class="w">${s.w}V</span>
+        ${s.l !== undefined ? `<span class="l"> ${s.l}T</span>` : ''}
+        ${s.pts !== undefined ? `<span style="color:var(--text2);margin-left:4px">${s.pts}p</span>` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
 /* ═══════════════ RENDER KAMPER ═══════════════ */
 function renderKamper() {
-  const played = matches.filter(m => ['win','loss','draw'].includes(m.result));
-  const upcoming = matches.filter(m => ['upcoming','tbd'].includes(m.result));
+  // Use liveData if available, else fall back to screenshot data
+  const played   = liveData.results.length   ? liveData.results   : [];
+  const upcoming = liveData.upcoming.length  ? liveData.upcoming  : [];
+  const standingsArr = liveData.standings    ? liveData.standings : standings;
 
-  const wins = played.filter(m=>m.result==='win').length;
+  // Stats
+  const wins   = played.filter(m=>m.result==='win').length;
   const losses = played.filter(m=>m.result==='loss').length;
-  const draws = played.filter(m=>m.result==='draw').length;
-  const total = played.length;
+  const draws  = played.filter(m=>m.result==='draw').length;
+  const total  = played.length;
   const wr = total > 0 ? Math.round((wins/total)*100) : 0;
 
-  // Streak
   let streak = 0, streakType = '';
   for(let i = played.length-1; i>=0; i--) {
     if(i === played.length-1) { streakType = played[i].result; streak = 1; }
     else if(played[i].result === streakType) streak++;
     else break;
   }
-  const streakLabel = streakType === 'win' ? `W${streak}` : streakType === 'loss' ? `L${streak}` : `${streak}`;
+  const streakLabel = streakType === 'win' ? `W${streak}` : streakType === 'loss' ? `L${streak}` : (streak||'-');
 
-  document.getElementById('stat-w').textContent = wins;
-  document.getElementById('stat-l').textContent = losses;
-  document.getElementById('stat-d').textContent = draws;
+  document.getElementById('stat-w').textContent  = wins;
+  document.getElementById('stat-l').textContent  = losses;
+  document.getElementById('stat-d').textContent  = draws;
   document.getElementById('stat-wr').textContent = wr + '%';
-  document.getElementById('stat-s').textContent = streakLabel;
+  document.getElementById('stat-s').textContent  = streakLabel;
 
-  // Played list
+  // Played
   const playedList = document.getElementById('played-list');
-  playedList.innerHTML = [...played].reverse().map(m => {
-    const d = new Date(m.date);
-    const dateStr = d.toLocaleDateString('no-NO', {day:'2-digit',month:'short',year:'numeric'});
-    const mapTags = m.maps.map(mp => `
-      <span class="map-tag played ${mp.result}">${mp.name} ${mp.scoreUs}–${mp.scoreThem}</span>
-    `).join('');
-    const resultClass = m.result;
-    const scoreHtml = m.scoreUs !== null ? `
-      <div class="score-display">
-        <span class="${m.result==='win'?'s-win':'s-loss'}">${m.scoreUs}</span>
-        <span class="s-sep">:</span>
-        <span class="${m.result==='win'?'s-loss':'s-win'}">${m.scoreThem}</span>
-      </div>
-      <div><span class="result-badge rb-${m.result}">${m.result==='win'?'SEIER':'TAP'}</span></div>
-    ` : '';
-    return `
-      <div class="match-card ${resultClass}">
-        <div class="match-meta">
-          <div class="date">${dateStr}</div>
-          <div>${m.time}</div>
-          <div style="margin-top:4px">${m.tournament}</div>
-          <div>${m.format}</div>
+  if (played.length === 0) {
+    playedList.innerHTML = '<div style="font-family:\'Share Tech Mono\',monospace;font-size:11px;color:var(--text3);padding:14px;text-align:center;">Ingen spillte kamper ennå</div>';
+  } else {
+    playedList.innerHTML = [...played].reverse().map(m => {
+      let dateStr = m.date || '';
+      try {
+        const d = m.date ? (m.date.includes('T') ? new Date(m.date) : new Date(m.date+'T00:00:00')) : null;
+        if (d && !isNaN(d)) dateStr = d.toLocaleDateString('no-NO', {day:'2-digit',month:'short',year:'numeric'});
+      } catch(e) {}
+      const mapTags = (m.maps||[]).map(mp => `
+        <span class="map-tag played ${mp.result}">${mp.name} ${mp.scoreUs}–${mp.scoreThem}</span>
+      `).join('');
+      const scoreHtml = m.scoreUs !== null && m.scoreUs !== undefined ? `
+        <div class="score-display">
+          <span class="${m.result==='win'?'s-win':'s-loss'}">${m.scoreUs}</span>
+          <span class="s-sep">:</span>
+          <span class="${m.result==='win'?'s-loss':'s-win'}">${m.scoreThem}</span>
         </div>
-        <div class="match-teams">
-          <div class="match-team-row">
-            <div class="team-name us">Fjærkrebandittene</div>
+        <div><span class="result-badge rb-${m.result}">${m.result==='win'?'SEIER':m.result==='draw'?'UAVGJORT':'TAP'}</span></div>
+      ` : '';
+      const cardLink = m.matchUrl ? `onclick="window.open('${m.matchUrl}','_blank')" style="cursor:pointer"` : '';
+      return `
+        <div class="match-card ${m.result}" ${cardLink}>
+          <div class="match-meta">
+            <div class="date">${dateStr}</div>
+            <div>${m.time||''}</div>
+            <div style="margin-top:4px">Komplettligaen CS2</div>
+            <div>Bo2</div>
           </div>
-          <div class="match-team-row">
-            <div class="team-name">${m.opponent}</div>
+          <div class="match-teams">
+            <div class="match-team-row"><div class="team-name us">Fjærkrebandittene</div></div>
+            <div class="match-team-row"><div class="team-name">${m.opponent||'???'}</div></div>
+            ${mapTags ? `<div class="match-map-tags">${mapTags}</div>` : ''}
           </div>
-          <div class="match-map-tags">${mapTags}</div>
+          <div class="match-score">${scoreHtml}</div>
         </div>
-        <div class="match-score">${scoreHtml}</div>
-      </div>
-    `;
-  }).join('');
+      `;
+    }).join('');
+  }
 
-  // Upcoming list
+  // Upcoming
   const upcomingList = document.getElementById('upcoming-list');
-  upcomingList.innerHTML = upcoming.map(m => {
-    const d = new Date(m.date);
-    const dateStr = d.toLocaleDateString('no-NO', {weekday:'long',day:'2-digit',month:'long'});
-    const isTbd = m.result === 'tbd';
-    const mapsStr = m.mapPool ? `Kartpool: ${m.mapPool.join(' · ')}` : 'Kartpool: TBD';
-    return `
-      <div class="match-card ${m.result}">
-        <div class="match-meta">
-          <div class="date">${dateStr}</div>
-          <div>${m.time}</div>
-          <div style="margin-top:4px">${m.tournament}</div>
-          <div>${m.format}</div>
-        </div>
-        <div class="match-teams">
-          <div class="match-team-row">
-            <div class="team-name us">Fjærkrebandittene</div>
+  if (upcoming.length === 0) {
+    upcomingList.innerHTML = '<div style="font-family:\'Share Tech Mono\',monospace;font-size:11px;color:var(--text3);padding:14px;text-align:center;">Ingen kommende kamper funnet</div>';
+  } else {
+    upcomingList.innerHTML = upcoming.map(m => {
+      let dateStr = m.date || '';
+      try {
+        const d = m.date ? (m.date.includes('T') ? new Date(m.date) : new Date(m.date+'T00:00:00')) : null;
+        if (d && !isNaN(d)) dateStr = d.toLocaleDateString('no-NO', {weekday:'long',day:'2-digit',month:'long'});
+      } catch(e) {}
+      const cardLink = m.matchUrl ? `onclick="window.open('${m.matchUrl}','_blank')" style="cursor:pointer"` : '';
+      return `
+        <div class="match-card upcoming" ${cardLink}>
+          <div class="match-meta">
+            <div class="date">${dateStr}</div>
+            <div>${m.time||'??:??'}</div>
+            <div style="margin-top:4px">Komplettligaen CS2</div>
+            <div>Bo2</div>
           </div>
-          <div class="match-team-row">
-            <div class="team-name">${m.opponent}</div>
+          <div class="match-teams">
+            <div class="match-team-row"><div class="team-name us">Fjærkrebandittene</div></div>
+            <div class="match-team-row"><div class="team-name">${m.opponent||'???'}</div></div>
+            <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text3);margin-top:6px;">Kartpool: TBD</div>
           </div>
-          <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text3);margin-top:6px;">${mapsStr}</div>
-        </div>
-        <div class="match-score">
-          ${isTbd ? `<div class="score-tbd">TBD</div>` : `
-            <div class="score-upcoming">
-              <div style="font-size:13px;color:var(--orange);font-family:'Barlow Condensed',sans-serif;font-weight:700;">KOMMENDE</div>
-            </div>
+          <div class="match-score">
+            <div style="font-size:13px;color:var(--orange);font-family:'Barlow Condensed',sans-serif;font-weight:700;">KOMMENDE</div>
             <div style="margin-top:6px"><span class="result-badge rb-upcoming">PLANLAGT</span></div>
-          `}
+            ${m.matchUrl ? `<div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text3);margin-top:6px;">↗ gamer.no</div>` : ''}
+          </div>
         </div>
-      </div>
-    `;
-  }).join('');
+      `;
+    }).join('');
+  }
 
   // Standings
-  const sb = document.getElementById('standings-body');
-  sb.innerHTML = standings.map(s => `
-    <div class="standing-row">
-      <div class="standing-pos ${s.us?'us':''}">${s.pos}</div>
-      <div class="standing-name ${s.us?'us':''}">${s.name}</div>
-      <div class="standing-record"><span class="w">${s.w}W</span> <span class="l">${s.l}L</span></div>
-    </div>
-  `).join('');
+  _renderStandings(standingsArr);
 
-  // Next match countdown + link
-  const nextMatch = matches.find(m => m.isNext);
-  if(nextMatch) {
-    document.getElementById('next-vs').innerHTML = `
-      <span class="us">Fjærkrebandittene</span>
-      <span class="vs">vs</span>
-      ${nextMatch.opponent}
-    `;
-    const d = new Date(nextMatch.date);
-    document.getElementById('next-when').textContent = d.toLocaleDateString('no-NO',{weekday:'long',day:'2-digit',month:'long'}) + ' // ' + nextMatch.time;
-    if(nextMatch.mapPool && nextMatch.mapPool.length) {
-      document.getElementById('next-maps').textContent = 'Kartpool: ' + nextMatch.mapPool.join(' · ');
-    } else {
-      document.getElementById('next-maps').textContent = 'Kartpool: TBD';
-    }
-    // Match link
-    const linkEl = document.getElementById('next-match-link');
-    if(nextMatch.matchUrl) {
-      linkEl.href = nextMatch.matchUrl;
-      linkEl.style.display = 'flex';
-    }
-
-    const target = new Date(`${nextMatch.date}T${nextMatch.time}:00`);
-    function updateCountdown() {
-      const now = new Date();
-      const diff = target - now;
-      if(diff <= 0) {
-        ['cd-d','cd-h','cd-m','cd-s'].forEach(id => document.getElementById(id).textContent = '00');
-        return;
-      }
-      const dd = Math.floor(diff / 86400000);
-      const hh = Math.floor((diff % 86400000) / 3600000);
-      const mm = Math.floor((diff % 3600000) / 60000);
-      const ss = Math.floor((diff % 60000) / 1000);
-      document.getElementById('cd-d').textContent = String(dd).padStart(2,'0');
-      document.getElementById('cd-h').textContent = String(hh).padStart(2,'0');
-      document.getElementById('cd-m').textContent = String(mm).padStart(2,'0');
-      document.getElementById('cd-s').textContent = String(ss).padStart(2,'0');
-    }
-    updateCountdown();
-    setInterval(updateCountdown, 1000);
-  }
+  // Next match — first upcoming, else hardcoded
+  const nextMatch = upcoming[0] || {
+    opponent: '???',
+    date: '2026-04-30',
+    time: '20:00',
+    matchUrl: 'https://www.gamer.no/turneringer/komplettligaen-counter-strike-varen-2026/13835/kamp/256224',
+  };
+  _renderNextMatch(nextMatch);
 }
+
+
 
 /* ═══════════════ NAV ═══════════════ */
 function showPage(page) {
@@ -1411,7 +1744,14 @@ updateClock();
 
 /* ═══════════════ INIT ═══════════════ */
 renderStrats();
-renderKamper();
+renderKamper(); // Viser screenshot-tabellen umiddelbart som fallback
+
+function _unlock() {
+  document.getElementById('pw-gate').style.display = 'none';
+  document.getElementById('app-wrapper').style.display = 'block';
+  // Last live data automatisk etter innlogging
+  loadLiveData();
+}
 
 /* ═════════════════════════════════════════
    Hash (SHA-256) av passordet lagres her.
@@ -1424,10 +1764,8 @@ async function _sha256(str) {
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
 }
 
-function _unlock() {
-  document.getElementById('pw-gate').style.display = 'none';
-  document.getElementById('app-wrapper').style.display = 'block';
-}
+// Skip gate if already authenticated this session
+if(sessionStorage.getItem('_fkb_ok') === '1') _unlock();
 
 async function _checkPw() {
   const input = document.getElementById('pw-input');
@@ -1449,8 +1787,6 @@ async function _checkPw() {
 document.getElementById('pw-btn').addEventListener('click', _checkPw);
 document.getElementById('pw-input').addEventListener('keydown', e => { if(e.key === 'Enter') _checkPw(); });
 
-// Skip gate if already authenticated this session
-if(sessionStorage.getItem('_fkb_ok') === '1') _unlock();
 </script>
 </body>
 </html>
