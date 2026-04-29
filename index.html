@@ -1102,8 +1102,7 @@ body::before {
    Sett inn din Cloudflare Worker URL her.
    Se gamer-proxy-worker.js for deploy-instrukser.
    ═════════════════════════════════════════ */
-const WORKER_URL = 'https://fjerkrebandittene.marcus-aas-mekiassen.workers.dev
-'; // ← BYTT UT
+const WORKER_URL = 'https://fjerkrebandittene.marcus-aas-mekiassen.workers.dev';
 
 /* Gamer.no URL-er — disse endres ikke */
 const URLS = {
@@ -1743,38 +1742,30 @@ function updateClock() {
 setInterval(updateClock, 1000);
 updateClock();
 
-/* ═══════════════ INIT ═══════════════ */
-renderStrats();
-renderKamper(); // Viser screenshot-tabellen umiddelbart som fallback
-
-function _unlock() {
-  document.getElementById('pw-gate').style.display = 'none';
-  document.getElementById('app-wrapper').style.display = 'block';
-  // Last live data automatisk etter innlogging
-  loadLiveData();
-}
-
-/* ═════════════════════════════════════════
-   Hash (SHA-256) av passordet lagres her.
-   Klartekst er aldri i koden.
-   ═════════════════════════════════════════ */
+/* ═══════════════════════════════════════════
+   INIT + AUTH
+   Alt kjøres når DOM er klar.
+   ═══════════════════════════════════════════ */
 const _h = 'cd5fc2cef51493b3e6ed0b4954089ecea08f9858c690698847d6f53cbab00d1f';
 
 async function _sha256(str) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
-  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-// Skip gate if already authenticated this session
-if(sessionStorage.getItem('_fkb_ok') === '1') _unlock();
+function _unlock() {
+  document.getElementById('pw-gate').style.display = 'none';
+  document.getElementById('app-wrapper').style.display = 'block';
+  loadLiveData();
+}
 
 async function _checkPw() {
   const input = document.getElementById('pw-input');
-  const err = document.getElementById('pw-err');
-  const val = input.value;
-  if(!val) return;
+  const err   = document.getElementById('pw-err');
+  const val   = input.value;
+  if (!val) return;
   const hash = await _sha256(val);
-  if(hash === _h) {
+  if (hash === _h) {
     sessionStorage.setItem('_fkb_ok', '1');
     _unlock();
   } else {
@@ -1785,8 +1776,20 @@ async function _checkPw() {
   }
 }
 
-document.getElementById('pw-btn').addEventListener('click', _checkPw);
-document.getElementById('pw-input').addEventListener('keydown', e => { if(e.key === 'Enter') _checkPw(); });
+document.addEventListener('DOMContentLoaded', function () {
+  renderStrats();
+  renderKamper();
+
+  document.getElementById('pw-btn').addEventListener('click', _checkPw);
+  document.getElementById('pw-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') _checkPw();
+  });
+
+  // Allerede innlogget denne sesjonen → gå rett inn
+  if (sessionStorage.getItem('_fkb_ok') === '1') {
+    _unlock();
+  }
+});
 
 </script>
 </body>
