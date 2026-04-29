@@ -9,93 +9,6 @@
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* ── PASSWORD GATE ── */
-#pw-gate {
-  position: fixed; inset: 0; z-index: 99999;
-  background: #050709;
-  display: flex; align-items: center; justify-content: center;
-  flex-direction: column;
-  gap: 0;
-}
-.pw-logo {
-  font-family: 'Barlow Condensed', sans-serif;
-  font-size: 15px; font-weight: 800;
-  letter-spacing: 0.12em; text-transform: uppercase;
-  color: #3a4f6e; margin-bottom: 32px;
-}
-.pw-logo span { color: #f0901a; }
-.pw-box {
-  background: #0e1117;
-  border: 1px solid #1e2840;
-  border-radius: 4px;
-  padding: 28px 32px 24px;
-  width: 320px;
-  display: flex; flex-direction: column; gap: 12px;
-  position: relative;
-  overflow: hidden;
-}
-.pw-box::before {
-  content: '';
-  position: absolute; top: 0; left: 0;
-  width: 100%; height: 2px;
-  background: linear-gradient(90deg, #f0901a, transparent);
-}
-.pw-label {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 9px; letter-spacing: 0.14em;
-  text-transform: uppercase; color: #3a4f6e;
-}
-.pw-title {
-  font-family: 'Barlow Condensed', sans-serif;
-  font-size: 18px; font-weight: 700;
-  text-transform: uppercase; letter-spacing: 0.04em;
-  color: #c8d4e8; margin-bottom: 4px;
-}
-#pw-input {
-  width: 100%;
-  background: #131823;
-  border: 1px solid #1e2840;
-  border-radius: 3px;
-  padding: 10px 12px;
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 14px;
-  color: #c8d4e8;
-  letter-spacing: 0.1em;
-  outline: none;
-  transition: border-color 0.15s;
-}
-#pw-input:focus { border-color: #f0901a; }
-#pw-input.error { border-color: #e05252; animation: shake 0.3s; }
-@keyframes shake {
-  0%,100%{transform:translateX(0)}
-  25%{transform:translateX(-6px)}
-  75%{transform:translateX(6px)}
-}
-#pw-btn {
-  width: 100%;
-  background: #f0901a;
-  border: none; border-radius: 3px;
-  padding: 10px;
-  font-family: 'Barlow Condensed', sans-serif;
-  font-size: 14px; font-weight: 700;
-  letter-spacing: 0.08em; text-transform: uppercase;
-  color: #000; cursor: pointer;
-  transition: background 0.15s;
-}
-#pw-btn:hover { background: #ff6a00; }
-#pw-err {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 10px; color: #e05252;
-  text-align: center; letter-spacing: 0.06em;
-  min-height: 14px;
-}
-.pw-corner {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 8px; color: #1e2840;
-  letter-spacing: 0.05em; margin-top: 24px;
-}
-#app-wrapper { display: none; }
-
 :root {
   --bg:        #080a0d;
   --bg2:       #0e1117;
@@ -915,21 +828,10 @@ body::before {
 </head>
 <body>
 
-<!-- PASSWORD GATE -->
-<div id="pw-gate">
-  <div class="pw-logo">FJÆR<span>KRE</span>BANDITTENE</div>
-  <div class="pw-box">
-    <div class="pw-label">// Tilgangskontroll</div>
-    <div class="pw-title">Stratbook</div>
-    <input id="pw-input" type="password" placeholder="Passord" autocomplete="off" onkeydown="if(event.key==='Enter')_checkPw()" />
-    <button id="pw-btn" onclick="_checkPw()">Logg inn</button>
-    <div id="pw-err"></div>
-  </div>
-  <div class="pw-corner">INTERN BRUK // FJÆRKREBANDITTENE CS2 // 2026</div>
-</div>
-
-<!-- APP WRAPPER (hidden until authenticated) -->
+<!-- APP WRAPPER -->
 <div id="app-wrapper">
+
+<!-- TOP BAR -->
 
 <!-- TOP BAR -->
 <div id="topbar">
@@ -1733,45 +1635,13 @@ function updateClock() {
 setInterval(updateClock, 1000);
 updateClock();
 
-/* ═══════════════════════════════════════════
-   AUTH + INIT
-   ═══════════════════════════════════════════ */
-
-/* Passordverifisering — fungerer på file://, http og https */
-const _k = 'eWFncmVldGllcg==';
-function _verify(pw) {
-  try { return btoa(pw.split('').reverse().join('')) === _k; }
-  catch(e) { return false; }
-}
-
-function _unlock() {
-  document.getElementById('pw-gate').style.display = 'none';
-  document.getElementById('app-wrapper').style.display = 'block';
-  loadLiveData();
-}
-
-function _checkPw() {
-  var input = document.getElementById('pw-input');
-  var err   = document.getElementById('pw-err');
-  var val   = input.value;
-  if (!val) return;
-  if (_verify(val)) {
-    sessionStorage.setItem('_fkb_ok', '1');
-    _unlock();
-  } else {
-    err.textContent = 'Feil passord.';
-    input.value = '';
-    input.classList.add('error');
-    setTimeout(function(){ input.classList.remove('error'); err.textContent = ''; }, 1200);
-  }
-}
-
-/* Init — script er sist i <body>, DOM er garantert klar */
+/* Init */
 (function init() {
   try { renderStrats(); } catch(e) { console.error('renderStrats:', e); }
   try { renderKamper(); } catch(e) { console.error('renderKamper:', e); }
-  if (sessionStorage.getItem('_fkb_ok') === '1') _unlock();
+  loadLiveData();
 })();
+
 
 
 
