@@ -962,6 +962,9 @@ body::before {
           <div class="section-divider">Kartoversikt</div>
           <div id="map-stats-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:24px;"></div>
 
+          <div class="section-divider">Spillerstatistikk — siste kamp</div>
+          <div id="player-stats-box" style="margin-bottom:24px;"></div>
+
           <div class="section-divider">Kommende kamper</div>
           <div class="match-list" id="upcoming-list"></div>
 
@@ -1016,7 +1019,7 @@ body::before {
 
 <script>
 /* ═══════════════════════════════════════════════════════════
-   KAMPDATA — oppdater dette manuelt etter hvert screenshot
+   KAMPDATA
    ═══════════════════════════════════════════════════════════ */
 
 const KAMPER = {
@@ -1024,56 +1027,53 @@ const KAMPER = {
     {
       opponent:  'IL Hei E-sport MainBoys',
       date:      '2026-04-23',
-      time:      '20:00',
+      time:      '19:00',
       result:    'win',
       scoreUs:   2,
       scoreThem: 0,
-      maps: [
-        { name: 'Nuke',   result: 'win', scoreUs: 16, scoreThem: 6  },
-        { name: 'Anubis', result: 'win', scoreUs: 16, scoreThem: 11 },
-      ],
+      format:    'Bo3',
+      runde:     'Runde 1',
+      maps: [],
       matchUrl: null,
     },
     {
       opponent:  'Gatemix E-Sport (CS2)',
       date:      '2026-04-28',
-      time:      '20:00',
+      time:      '19:00',
       result:    'win',
       scoreUs:   2,
       scoreThem: 0,
+      format:    'Bo3',
+      runde:     'Runde 2',
+      maps: [],
+      matchUrl: null,
+    },
+    {
+      opponent:  'Klompeklattane',
+      date:      '2026-04-30',
+      time:      '20:00',
+      result:    'win',
+      scoreUs:   2,
+      scoreThem: 1,
+      format:    'Bo3',
+      runde:     'Runde 3',
       maps: [
-        { name: 'Overpass', result: 'win', scoreUs: 16, scoreThem: 9  },
-        { name: 'Ancient',  result: 'win', scoreUs: 16, scoreThem: 11 },
+        { name: 'Anubis',  result: 'win',  scoreUs: 13, scoreThem: 10 },
+        { name: 'Nuke',    result: 'loss', scoreUs: 10, scoreThem: 13 },
+        { name: 'Ancient', result: 'win',  scoreUs: 13, scoreThem: 6  },
       ],
       matchUrl: null,
     },
-    // Legg til her etter neste kamp:
-    // {
-    //   opponent: 'Klompeklattane', date: '2026-04-30', time: '20:00',
-    //   result: 'win', scoreUs: 2, scoreThem: 0,
-    //   maps: [
-    //     { name: 'Mirage', result: 'win', scoreUs: 16, scoreThem: 9 },
-    //     { name: 'Dust 2', result: 'win', scoreUs: 16, scoreThem: 14 },
-    //   ],
-    //   matchUrl: 'https://www.gamer.no/turneringer/.../kamp/256224',
-    // },
   ],
 
   kommende: [
-    {
-      opponent: 'Klompeklattane',
-      date:     '2026-04-30',
-      time:     '20:00',
-      format:   'Bo3',
-      isNext:   true,
-      matchUrl: 'https://www.gamer.no/turneringer/komplettligaen-counter-strike-varen-2026/13835/kamp/256224',
-    },
     {
       opponent: 'Ocean Cafe & Bar Gaming',
       date:     '2026-05-05',
       time:     '19:00',
       format:   'Bo3',
-      isNext:   false,
+      runde:    'Runde 4',
+      isNext:   true,
       matchUrl: null,
     },
     {
@@ -1081,6 +1081,7 @@ const KAMPER = {
       date:     '2026-05-07',
       time:     '19:00',
       format:   'Bo3',
+      runde:    'Runde 5',
       isNext:   false,
       matchUrl: null,
     },
@@ -1089,6 +1090,7 @@ const KAMPER = {
       date:     '2026-05-14',
       time:     '19:00',
       format:   'Bo3',
+      runde:    'Runde 6',
       isNext:   false,
       matchUrl: null,
     },
@@ -1097,6 +1099,7 @@ const KAMPER = {
       date:     '2026-05-21',
       time:     '19:00',
       format:   'Bo3',
+      runde:    'Runde 7',
       isNext:   false,
       matchUrl: null,
     },
@@ -1105,6 +1108,7 @@ const KAMPER = {
       date:     '2026-05-28',
       time:     '19:00',
       format:   'Bo3',
+      runde:    'Runde 8',
       isNext:   false,
       matchUrl: null,
     },
@@ -1112,33 +1116,48 @@ const KAMPER = {
 };
 
 /* ═══════════════════════════════════════════════════════════
-   KARTOVERSIKT — oppdater etter hvert screenshot
+   SPILLERSTATISTIKK — siste kamp
+   Oppdater etter hver kamp
+   ═══════════════════════════════════════════════════════════ */
+const SPILLERSTATS = {
+  kamp: 'vs Klompeklattane — 30. apr 2026',
+  resultat: 'Seier 2–1 (Anubis 13-10 · Nuke 10-13 · Ancient 13-6)',
+  spillere: [
+    { name: 'S15T3M',    k: 60, a: 11, d: 43, adr: 89,  r: 1.26 },
+    { name: 'propit3',   k: 52, a: 15, d: 45, adr: 92,  r: 1.07 },
+    { name: 'MEKKISSSS', k: 46, a: 13, d: 41, adr: 76,  r: 1.07 },
+    { name: 'G1zdani',   k: 46, a: 7,  d: 40, adr: 71,  r: 1.12 },
+    { name: 'Olelelele', k: 30, a: 18, d: 49, adr: 64,  r: 0.64 },
+  ],
+};
+
+/* ═══════════════════════════════════════════════════════════
+   KARTOVERSIKT — oppdater etter screenshot
    ═══════════════════════════════════════════════════════════ */
 const KARTOVERSIKT = [
-  { name:'Nuke',     pct:100, w:1, l:0, total:1, diff:'+10', valgt:1, vraket:0 },
+  { name:'Anubis',   pct:100, w:2, l:0, total:2, diff:'+8',  valgt:1, vraket:0 },
+  { name:'Ancient',  pct:100, w:2, l:0, total:2, diff:'+12', valgt:0, vraket:0 },
   { name:'Overpass', pct:100, w:1, l:0, total:1, diff:'+7',  valgt:1, vraket:0 },
-  { name:'Ancient',  pct:100, w:1, l:0, total:1, diff:'+5',  valgt:0, vraket:0 },
-  { name:'Anubis',   pct:100, w:1, l:0, total:1, diff:'+5',  valgt:0, vraket:0 },
+  { name:'Nuke',     pct:50,  w:1, l:1, total:2, diff:'+7',  valgt:1, vraket:0 },
   { name:'Dust II',  pct:0,   w:0, l:0, total:0, diff:'0',   valgt:0, vraket:2 },
   { name:'Inferno',  pct:0,   w:0, l:0, total:0, diff:'0',   valgt:0, vraket:2 },
   { name:'Mirage',   pct:null, w:0, l:0, total:0, diff:'0',  valgt:0, vraket:0 },
 ];
 
 /* ═══════════════════════════════════════════════════════════
-   TABELL — 5. divisjon avd. A — oppdater etter hver kampdag
+   TABELL — 5. divisjon avd. A
    ═══════════════════════════════════════════════════════════ */
-
 const TABELL = [
-  { pos:1,  name:'Back Breakers (CS2)',      s:2, w:2, u:0, l:0, diff:'+4', p:6, us:false },
-  { pos:1,  name:'Fjærkrebandittene (CS2)',  s:2, w:2, u:0, l:0, diff:'+4', p:6, us:true  },
-  { pos:3,  name:'GAMINGGAMERS',             s:2, w:2, u:0, l:0, diff:'+2', p:6, us:false },
-  { pos:4,  name:'Ocean Cafe & Bar Gaming',  s:2, w:1, u:0, l:1, diff:'+1', p:3, us:false },
-  { pos:5,  name:'Klompeklattane',           s:2, w:1, u:0, l:1, diff:'0',  p:3, us:false },
-  { pos:6,  name:'VorteX (CS2)',             s:1, w:0, u:0, l:1, diff:'-1', p:0, us:false },
-  { pos:7,  name:'IL Hei E-sport MainBoys',  s:1, w:0, u:0, l:1, diff:'-2', p:0, us:false },
-  { pos:8,  name:'99INONE',                  s:2, w:0, u:0, l:2, diff:'-4', p:0, us:false },
-  { pos:8,  name:'Gatemix E-Sport (CS2)',    s:2, w:0, u:0, l:2, diff:'-4', p:0, us:false },
-  { pos:10, name:'Wen Hua 28a [trukket]',    s:0, w:0, u:0, l:0, diff:'0',  p:0, us:false, withdrawn:true },
+  { pos:1,  name:'Fjærkrebandittene (CS2)',   s:3, w:3, u:0, l:0, diff:'+5', p:9,  us:true  },
+  { pos:2,  name:'Ocean Cafe & Bar Gaming',   s:3, w:2, u:0, l:1, diff:'+3', p:6,  us:false },
+  { pos:3,  name:'Back Breakers (CS2)',       s:3, w:2, u:0, l:1, diff:'+2', p:6,  us:false },
+  { pos:4,  name:'GAMINGGAMERS',              s:3, w:2, u:0, l:1, diff:'0',  p:6,  us:false },
+  { pos:5,  name:'VorteX (CS2)',              s:2, w:1, u:0, l:1, diff:'+1', p:3,  us:false },
+  { pos:6,  name:'Klompeklattane',            s:3, w:1, u:0, l:2, diff:'-1', p:3,  us:false },
+  { pos:7,  name:'99INONE',                   s:3, w:1, u:0, l:2, diff:'-2', p:3,  us:false },
+  { pos:8,  name:'Gatemix E-Sport (CS2)',     s:2, w:0, u:0, l:2, diff:'-4', p:0,  us:false },
+  { pos:8,  name:'IL Hei E-sport MainBoys',   s:2, w:0, u:0, l:2, diff:'-4', p:0,  us:false },
+  { pos:10, name:'Wen Hua 28a [Trukket]',     s:0, w:0, u:0, l:0, diff:'0',  p:0,  us:false, withdrawn:true },
 ];
 
 /* ── Hjelpefunksjoner ── */
@@ -1342,8 +1361,55 @@ function renderMapStats() {
   }).join('');
 }
 
+function renderPlayerStats() {
+  const box = document.getElementById('player-stats-box');
+  if (!box || !SPILLERSTATS) return;
+  const maxR = Math.max(...SPILLERSTATS.spillere.map(p => p.r));
+  box.innerHTML = `
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:4px;overflow:hidden;">
+      <div style="padding:10px 14px 8px;background:var(--bg3);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--text);">${SPILLERSTATS.kamp}</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--green);letter-spacing:0.06em;">${SPILLERSTATS.resultat}</div>
+      </div>
+      <table style="width:100%;border-collapse:collapse;">
+        <thead>
+          <tr style="border-bottom:1px solid var(--border);">
+            <th style="text-align:left;padding:8px 6px 8px 14px;font-family:'Share Tech Mono',monospace;font-size:9px;font-weight:400;letter-spacing:0.08em;color:var(--text3);">SPILLER</th>
+            <th style="text-align:center;padding:8px 6px;font-family:'Share Tech Mono',monospace;font-size:9px;font-weight:400;letter-spacing:0.08em;color:var(--text3);">K</th>
+            <th style="text-align:center;padding:8px 6px;font-family:'Share Tech Mono',monospace;font-size:9px;font-weight:400;letter-spacing:0.08em;color:var(--text3);">A</th>
+            <th style="text-align:center;padding:8px 6px;font-family:'Share Tech Mono',monospace;font-size:9px;font-weight:400;letter-spacing:0.08em;color:var(--text3);">D</th>
+            <th style="text-align:center;padding:8px 6px;font-family:'Share Tech Mono',monospace;font-size:9px;font-weight:400;letter-spacing:0.08em;color:var(--orange);">ADR</th>
+            <th style="text-align:center;padding:8px 14px 8px 6px;font-family:'Share Tech Mono',monospace;font-size:9px;font-weight:400;letter-spacing:0.08em;color:var(--text3);">RATING</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${SPILLERSTATS.spillere.map((p, i) => {
+            const rColor = p.r >= 1.2 ? 'var(--green)' : p.r >= 1.0 ? 'var(--orange)' : 'var(--red)';
+            const adrColor = p.adr >= 90 ? 'var(--green)' : p.adr >= 70 ? 'var(--orange)' : 'var(--text2)';
+            const isMvp = p.r === maxR;
+            return `
+              <tr style="border-bottom:1px solid var(--border);${isMvp ? 'background:rgba(240,144,26,0.05);' : ''}">
+                <td style="padding:10px 6px 10px 14px;">
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    ${isMvp ? '<span style="font-family:\'Share Tech Mono\',monospace;font-size:8px;color:var(--orange);letter-spacing:0.06em;">MVP</span>' : '<span style="width:28px;"></span>'}
+                    <span style="font-family:\'Barlow Condensed\',sans-serif;font-size:14px;font-weight:700;letter-spacing:0.04em;color:var(--text);">${p.name}</span>
+                  </div>
+                </td>
+                <td style="text-align:center;padding:10px 6px;font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--text);">${p.k}</td>
+                <td style="text-align:center;padding:10px 6px;font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--text2);">${p.a}</td>
+                <td style="text-align:center;padding:10px 6px;font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--text2);">${p.d}</td>
+                <td style="text-align:center;padding:10px 6px;font-family:'Share Tech Mono',monospace;font-size:11px;color:${adrColor};">${p.adr}</td>
+                <td style="text-align:center;padding:10px 14px 10px 6px;font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:800;color:${rColor};">${p.r.toFixed(2)}</td>
+              </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
 function renderKamper() {
   renderMapStats();
+  renderPlayerStats();
   const played   = liveData.results  || [];
   const upcoming = liveData.upcoming || [];
   const standings = liveData.standings || TABELL;
@@ -1411,7 +1477,7 @@ function renderKamper() {
       <div class="match-teams">
         <div class="match-team-row"><div class="team-name us">Fjærkrebandittene</div></div>
         <div class="match-team-row"><div class="team-name">${m.opponent}</div></div>
-        <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text3);margin-top:6px;">Kartpool: TBD · ${m.format||'Bo3'}</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text3);margin-top:6px;">${m.runde||''} · Kartpool: TBD · ${m.format||'Bo3'}</div>
       </div>
       <div class="match-score">
         <div style="font-size:13px;color:var(--orange);font-family:'Barlow Condensed',sans-serif;font-weight:700;">KOMMENDE</div>
