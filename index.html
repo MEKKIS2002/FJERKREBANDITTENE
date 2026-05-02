@@ -1,4 +1,84 @@
 <!DOCTYPE html>
+<!--
+╔══════════════════════════════════════════════════════════════════════════════════╗
+║              FJÆRKREBANDITTENE STRATBOOK — REDIGERINGSGUIDE                    ║
+╠══════════════════════════════════════════════════════════════════════════════════╣
+║                                                                                  ║
+║  ALT DU TRENGER Å ENDRE LIGGER I <script>-TAGGEN NEDERST I FILEN.              ║
+║  CSS og HTML (utseende/layout) trenger du ALDRI å røre.                         ║
+║                                                                                  ║
+╠══════════════════════════════════════════════════════════════════════════════════╣
+║  STRATS — Linje 1050–1986                                                       ║
+║  ───────────────────────────────────────────────────────────────────────────    ║
+║  Linje 1056  Mirage-strats                                                      ║
+║  Linje 1193  Inferno-strats                                                     ║
+║  Linje 1334  Nuke-strats                                                        ║
+║  Linje 1468  Overpass-strats                                                    ║
+║  Linje 1582  Ancient-strats                                                     ║
+║  Linje 1718  Anubis-strats                                                      ║
+║  Linje 1856  Dust 2-strats                                                      ║
+║                                                                                  ║
+║  Slik endrer du en strat:                                                        ║
+║    name     → teksten som vises som tittel på kortet                            ║
+║    desc     → kort beskrivelse under tittelen                                   ║
+║    type     → execute | split | default | rush | pistol | fake                  ║
+║    badge    → badge-execute | badge-split | badge-default |                     ║
+║               badge-rush | badge-pistol | badge-fake                            ║
+║    steps    → hvert steg har: text (beskrivelse) og players (hvem gjør det)    ║
+║    utility  → grenades: name (f.eks. "Smokes x3") og detail (f.eks. "Window") ║
+║                                                                                  ║
+║  Legg til en strat: Kopier en hel { ... }, blokk og lim inn i riktig kart.     ║
+║  Slett en strat:    Fjern hele { ... }, blokken inkl. kommaet til slutt.       ║
+║                                                                                  ║
+╠══════════════════════════════════════════════════════════════════════════════════╣
+║  KAMPER (kamphistorikk + kommende) — Linje 1995                                 ║
+║  ───────────────────────────────────────────────────────────────────────────    ║
+║  KAMPER.spilt     → legg til spilte kamper her etter hvert                     ║
+║  KAMPER.kommende  → oppdater når nye kamper blir kjent                          ║
+║                                                                                  ║
+║  Slik legger du til en spilt kamp:                                               ║
+║    opponent   → motstanderens navn (nøyaktig som på ggarena.no)                ║
+║    date       → 'YYYY-MM-DD'                                                    ║
+║    time       → 'HH:MM'                                                         ║
+║    result     → 'win' | 'loss' | 'draw'                                         ║
+║    scoreUs    → antall kart vi vant (f.eks. 2 i Bo3)                           ║
+║    scoreThem  → antall kart de vant                                             ║
+║    maps       → liste med { name, result, scoreUs, scoreThem } per kart        ║
+║    matchUrl   → lenke fra ggarena.no (eller null)                               ║
+║                                                                                  ║
+╠══════════════════════════════════════════════════════════════════════════════════╣
+║  SPILLERSTATISTIKK — Linje 2095                                                  ║
+║  ───────────────────────────────────────────────────────────────────────────    ║
+║  Oppdater SPILLERSTATS etter hver kamp med nye K/A/D/ADR/Rating-tall.           ║
+║  kamp     → tekst som vises som overskrift ("vs Motstanderlaget — dato")       ║
+║  resultat → kortfattet kampresultat                                              ║
+║  spillere → liste med navn, k, a, d, adr, r (rating)                           ║
+║                                                                                  ║
+╠══════════════════════════════════════════════════════════════════════════════════╣
+║  KARTOVERSIKT — Linje 2110                                                       ║
+║  ───────────────────────────────────────────────────────────────────────────    ║
+║  pct    → vinnprosent (0–100, eller null hvis ikke spilt)                       ║
+║  w / l  → antall vunnet / tapt                                                  ║
+║  total  → totalt antall kart spilt                                              ║
+║  diff   → rundeforskjell, f.eks. '+7' eller '-3'                               ║
+║  vraket → antall ganger vraket i kartvalg                                       ║
+║                                                                                  ║
+╠══════════════════════════════════════════════════════════════════════════════════╣
+║  TABELL — Linje 2123                                                             ║
+║  ───────────────────────────────────────────────────────────────────────────    ║
+║  Oppdater etter hver kampdag. Felt: pos, name, s, w, u, l, diff, p             ║
+║  us: true  → markerer Fjærkrebandittene i oransje                              ║
+║  withdrawn: true → viser laget som strøket                                     ║
+║                                                                                  ║
+╠══════════════════════════════════════════════════════════════════════════════════╣
+║  SPILLERNAVN — Linje 2155                                                        ║
+║  ───────────────────────────────────────────────────────────────────────────    ║
+║  Legg til / endre spillere her hvis laget skifter. Format:                      ║
+║    'SPILLERNAVN': 'bokstav'  (bokstav = s, o, p, b, m eller ny)                ║
+║  Tilhørende CSS-klasse (.ptag.BOKSTAV) finnes øverst i <style>.                ║
+║                                                                                  ║
+╚══════════════════════════════════════════════════════════════════════════════════╝
+-->
 <html lang="no">
 <head>
 <meta charset="UTF-8">
