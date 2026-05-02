@@ -1,81 +1,81 @@
 <!DOCTYPE html>
 <!--
 ╔══════════════════════════════════════════════════════════════════════════════════╗
-║              FJÆRKREBANDITTENE STRATBOOK — REDIGERINGSGUIDE                      ║
+║              FJÆRKREBANDITTENE STRATBOOK — REDIGERINGSGUIDE                    ║
 ╠══════════════════════════════════════════════════════════════════════════════════╣
 ║                                                                                  ║
-║  ALT DU TRENGER Å ENDRE LIGGER I <script>-TAGGEN NEDERST I FILEN.                ║
-║  CSS og HTML (utseende/layout) trenger du ALDRI å røre.                          ║
+║  ALT DU TRENGER Å ENDRE LIGGER I <script>-TAGGEN NEDERST I FILEN.              ║
+║  CSS og HTML (utseende/layout) trenger du ALDRI å røre.                         ║
 ║                                                                                  ║
 ╠══════════════════════════════════════════════════════════════════════════════════╣
-║  STRATS — Linje 1130–2066                                                        ║
-║  ───────────────────────────────────────────────────────────────────────────     ║
-║  Linje 1136  Mirage-strats                                                       ║
-║  Linje 1273  Inferno-strats                                                      ║
-║  Linje 1414  Nuke-strats                                                         ║
-║  Linje 1548  Overpass-strats                                                     ║
-║  Linje 1662  Ancient-strats                                                      ║
-║  Linje 1798  Anubis-strats                                                       ║
-║  Linje 1936  Dust 2-strats                                                       ║
+║  STRATS — Linje 1130–2066                                                       ║
+║  ───────────────────────────────────────────────────────────────────────────    ║
+║  Linje 1136  Mirage-strats                                                      ║
+║  Linje 1273  Inferno-strats                                                     ║
+║  Linje 1414  Nuke-strats                                                        ║
+║  Linje 1548  Overpass-strats                                                    ║
+║  Linje 1662  Ancient-strats                                                     ║
+║  Linje 1798  Anubis-strats                                                      ║
+║  Linje 1936  Dust 2-strats                                                      ║
 ║                                                                                  ║
 ║  Slik endrer du en strat:                                                        ║
-║    name     → teksten som vises som tittel på kortet                             ║
-║    desc     → kort beskrivelse under tittelen                                    ║
-║    type     → execute | split | default | rush | pistol | fake                   ║
-║    badge    → badge-execute | badge-split | badge-default |                      ║
-║               badge-rush | badge-pistol | badge-fake                             ║
-║    steps    → hvert steg har: text (beskrivelse) og players (hvem gjør det)      ║
-║    utility  → grenades: name (f.eks. "Smokes x3") og detail (f.eks. "Window")    ║
+║    name     → teksten som vises som tittel på kortet                            ║
+║    desc     → kort beskrivelse under tittelen                                   ║
+║    type     → execute | split | default | rush | pistol | fake                  ║
+║    badge    → badge-execute | badge-split | badge-default |                     ║
+║               badge-rush | badge-pistol | badge-fake                            ║
+║    steps    → hvert steg har: text (beskrivelse) og players (hvem gjør det)    ║
+║    utility  → grenades: name (f.eks. "Smokes x3") og detail (f.eks. "Window") ║
 ║                                                                                  ║
-║  Legg til en strat: Kopier en hel { ... }, blokk og lim inn i riktig kart.       ║
-║  Slett en strat:    Fjern hele { ... }, blokken inkl. kommaet til slutt.         ║
+║  Legg til en strat: Kopier en hel { ... }, blokk og lim inn i riktig kart.     ║
+║  Slett en strat:    Fjern hele { ... }, blokken inkl. kommaet til slutt.       ║
 ║                                                                                  ║
 ╠══════════════════════════════════════════════════════════════════════════════════╣
-║  KAMPER (kamphistorikk + kommende) — Linje 2075                                  ║
-║  ───────────────────────────────────────────────────────────────────────────     ║
-║  KAMPER.spilt     → legg til spilte kamper her etter hvert                       ║
-║  KAMPER.kommende  → oppdater når nye kamper blir kjent                           ║
+║  KAMPER (kamphistorikk + kommende) — Linje 2075                                 ║
+║  ───────────────────────────────────────────────────────────────────────────    ║
+║  KAMPER.spilt     → legg til spilte kamper her etter hvert                     ║
+║  KAMPER.kommende  → oppdater når nye kamper blir kjent                          ║
 ║                                                                                  ║
 ║  Slik legger du til en spilt kamp:                                               ║
-║    opponent   → motstanderens navn (nøyaktig som på ggarena.no)                  ║
-║    date       → 'YYYY-MM-DD'                                                     ║
-║    time       → 'HH:MM'                                                          ║
-║    result     → 'win' | 'loss' | 'draw'                                          ║
-║    scoreUs    → antall kart vi vant (f.eks. 2 i Bo3)                             ║
-║    scoreThem  → antall kart de vant                                              ║
-║    maps       → liste med { name, result, scoreUs, scoreThem } per kart          ║
-║    matchUrl   → lenke fra ggarena.no (eller null)                                ║
+║    opponent   → motstanderens navn (nøyaktig som på ggarena.no)                ║
+║    date       → 'YYYY-MM-DD'                                                    ║
+║    time       → 'HH:MM'                                                         ║
+║    result     → 'win' | 'loss' | 'draw'                                         ║
+║    scoreUs    → antall kart vi vant (f.eks. 2 i Bo3)                           ║
+║    scoreThem  → antall kart de vant                                             ║
+║    maps       → liste med { name, result, scoreUs, scoreThem } per kart        ║
+║    matchUrl   → lenke fra ggarena.no (eller null)                               ║
 ║                                                                                  ║
 ╠══════════════════════════════════════════════════════════════════════════════════╣
 ║  SPILLERSTATISTIKK — Linje 2175                                                  ║
-║  ───────────────────────────────────────────────────────────────────────────     ║
-║  Oppdater SPILLERSTATS etter hver kamp med nye K/A/D/ADR/Rating-tall.            ║
-║  kamp     → tekst som vises som overskrift ("vs Motstanderlaget — dato")         ║
+║  ───────────────────────────────────────────────────────────────────────────    ║
+║  Oppdater SPILLERSTATS etter hver kamp med nye K/A/D/ADR/Rating-tall.           ║
+║  kamp     → tekst som vises som overskrift ("vs Motstanderlaget — dato")       ║
 ║  resultat → kortfattet kampresultat                                              ║
-║  spillere → liste med navn, k, a, d, adr, r (rating)                             ║
+║  spillere → liste med navn, k, a, d, adr, r (rating)                           ║
 ║                                                                                  ║
 ╠══════════════════════════════════════════════════════════════════════════════════╣
 ║  KARTOVERSIKT — Linje 2190                                                       ║
-║  ───────────────────────────────────────────────────────────────────────────     ║
-║  pct    → vinnprosent (0–100, eller null hvis ikke spilt)                        ║
-║  w / l  → antall vunnet / tapt                                                   ║
-║  total  → totalt antall kart spilt                                               ║
-║  diff   → rundeforskjell, f.eks. '+7' eller '-3'                                 ║
-║  vraket → antall ganger vraket i kartvalg                                        ║
+║  ───────────────────────────────────────────────────────────────────────────    ║
+║  pct    → vinnprosent (0–100, eller null hvis ikke spilt)                       ║
+║  w / l  → antall vunnet / tapt                                                  ║
+║  total  → totalt antall kart spilt                                              ║
+║  diff   → rundeforskjell, f.eks. '+7' eller '-3'                               ║
+║  vraket → antall ganger vraket i kartvalg                                       ║
 ║                                                                                  ║
 ╠══════════════════════════════════════════════════════════════════════════════════╣
 ║  TABELL — Linje 2203                                                             ║
-║  ───────────────────────────────────────────────────────────────────────────     ║
-║  Oppdater etter hver kampdag. Felt: pos, name, s, w, u, l, diff, p               ║
-║  us: true  → markerer Fjærkrebandittene i oransje                                ║
-║  withdrawn: true → viser laget som strøket                                       ║
+║  ───────────────────────────────────────────────────────────────────────────    ║
+║  Oppdater etter hver kampdag. Felt: pos, name, s, w, u, l, diff, p             ║
+║  us: true  → markerer Fjærkrebandittene i oransje                              ║
+║  withdrawn: true → viser laget som strøket                                     ║
 ║                                                                                  ║
 ╠══════════════════════════════════════════════════════════════════════════════════╣
 ║  SPILLERNAVN — Linje 2235                                                        ║
-║  ───────────────────────────────────────────────────────────────────────────     ║
-║  Legg til / endre spillere her hvis laget skifter. Format:                       ║
-║    'SPILLERNAVN': 'bokstav'  (bokstav = s, o, p, b, m eller ny)                  ║
-║  Tilhørende CSS-klasse (.ptag.BOKSTAV) finnes øverst i <style>.                  ║
+║  ───────────────────────────────────────────────────────────────────────────    ║
+║  Legg til / endre spillere her hvis laget skifter. Format:                      ║
+║    'SPILLERNAVN': 'bokstav'  (bokstav = s, o, p, b, m eller ny)                ║
+║  Tilhørende CSS-klasse (.ptag.BOKSTAV) finnes øverst i <style>.                ║
 ║                                                                                  ║
 ╚══════════════════════════════════════════════════════════════════════════════════╝
 -->
@@ -2130,7 +2130,10 @@ const KAMPER = {
       format:   'Bo3',
       runde:    'Runde 4',
       isNext:   true,
-      matchUrl: 'https://www.ggarena.no/competitions/komplettligaen-counter-strike-varen-2026/13835/match/256248',
+      matchUrl: 'https://www.ggarena.no/competitions/komplettligaen-counter-strike-varen-2026/13835/lineup/211067',
+    },
+    {
+      opponent: 'GAMINGGAMERS',
       date:     '2026-05-07',
       time:     '19:00',
       format:   'Bo3',
@@ -2507,8 +2510,7 @@ function renderKamper() {
   ul.innerHTML = upcoming.length ? upcoming.map(m => {
     let dateStr = m.date||'';
     try { const d=new Date(m.date+'T00:00:00'); if(!isNaN(d)) dateStr=d.toLocaleDateString('no-NO',{weekday:'long',day:'2-digit',month:'long'}); } catch(e){}
-    const clickable = m.matchUrl ? `onclick="window.open('${m.matchUrl}','_blank')" style="cursor:pointer"` : '';
-    return `<div class="match-card upcoming" ${clickable}>
+    return `<div class="match-card upcoming">
       <div class="match-meta">
         <div class="date">${dateStr}</div><div>${m.time||'??:??'}</div>
         <div style="margin-top:4px">Komplettligaen CS2</div><div>${m.format||'Bo3'}</div>
@@ -2521,7 +2523,6 @@ function renderKamper() {
       <div class="match-score">
         <div style="font-size:13px;color:var(--orange);font-family:'Barlow Condensed',sans-serif;font-weight:700;">KOMMENDE</div>
         <div style="margin-top:6px"><span class="result-badge rb-upcoming">PLANLAGT</span></div>
-        ${m.matchUrl?`<div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text3);margin-top:6px;">↗ gamer.no</div>`:''}
       </div>
     </div>`;
   }).join('')
