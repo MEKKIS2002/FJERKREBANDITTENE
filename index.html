@@ -950,8 +950,8 @@ body::before {
   </div>
 
   <div class="main-nav">
-    <button class="active" onclick="showPage('strats')">Stratbook</button>
-    <button onclick="showPage('kamper')">Kamper</button>
+    <button class="active" onclick="showPage('strats', event)">Stratbook</button>
+    <button onclick="showPage('kamper', event)">Kamper</button>
   </div>
 
   <div class="topbar-right">
@@ -2536,7 +2536,7 @@ function renderKamper() {
 /* ══════════════════════════════════════════
    NAV
    ══════════════════════════════════════════ */
-function showPage(page) {
+function showPage(page, event) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-'+page).classList.add('active');
   document.querySelectorAll('.main-nav button').forEach(b=>b.classList.remove('active'));
