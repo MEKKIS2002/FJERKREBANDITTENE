@@ -968,7 +968,7 @@ body::before {
   <!-- SIDEBAR (strats only) -->
   <nav id="sidebar" class="visible">
     <div class="sidebar-label">Kart</div>
-    <a class="sidebar-link active" href="#map-mirage" onclick="setSidebarActive(this)"><div class="map-dot"></div>Mirage</a>
+    <a class="sidebar-link active" href="#map-mirage" onclick="event.preventDefault(); scrollToMap(this, 'mirage')"> <div class="map-dot"></div>Mirage</a>
     <a class="sidebar-link" href="#map-inferno" onclick="setSidebarActive(this)"><div class="map-dot"></div>Inferno</a>
     <a class="sidebar-link" href="#map-nuke" onclick="setSidebarActive(this)"><div class="map-dot"></div>Nuke</a>
     <a class="sidebar-link" href="#map-overpass" onclick="setSidebarActive(this)"><div class="map-dot"></div>Overpass</a>
